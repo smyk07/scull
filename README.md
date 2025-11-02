@@ -1,11 +1,14 @@
 # Simple Compiler
 
-A Simple Compiler. (Compiles to x64 fasm assembly).
-Only linux is supported for now.
+A C and Go like systems level programming language. Final name yet to be decided.
+Compiles to x86-64 fasm assembly.
+Only linux systems are supported for now.
 
 ## Inspiration
 
-[How to build a compiler from scratch by Alex The Dev](https://youtu.be/HOe2YFnzO2I)
+- [The C Programming Language](<https://en.wikipedia.org/wiki/C_(programming_language)>)
+- [The Go Programming Language](https://go.dev)
+- [How to build a compiler from scratch by Alex The Dev](https://youtu.be/HOe2YFnzO2I)
 
 ## Prerequisites for building
 
