@@ -23,7 +23,8 @@ typedef enum term_kind {
   TERM_DEREF,
   TERM_ADDOF,
   TERM_ARRAY_ACCESS,
-  TERM_ARRAY_LITERAL
+  TERM_ARRAY_LITERAL,
+  TERM_FUNCTION_CALL,
 } term_kind;
 
 /*
@@ -42,6 +43,11 @@ typedef struct array_literal_node {
   dynamic_array elements;
 } array_literal_node;
 
+typedef struct fn_call_node {
+  char *name;
+  dynamic_array parameters;
+} fn_call_node;
+
 /*
  * @struct term_node: represents a term.
  */
@@ -53,6 +59,7 @@ typedef struct term_node {
     variable identifier;
     array_access_node array_access;
     array_literal_node array_literal;
+    fn_call_node fn_call;
   };
 } term_node;
 
@@ -132,6 +139,10 @@ typedef enum instr_kind {
   INSTR_LOOP,
   INSTR_LOOP_BREAK,
   INSTR_LOOP_CONTINUE,
+  INSTR_FN_DEFINE,
+  INSTR_FN_DECLARE,
+  INSTR_RETURN,
+  INSTR_FN_CALL,
 } instr_kind;
 
 /*
@@ -212,6 +223,33 @@ typedef struct loop_node {
   dynamic_array instrs;
 } loop_node;
 
+typedef enum fn_kind {
+  FN_DEFINED = 0,
+  FN_DECLARED,
+} fn_kind;
+
+typedef struct fn_node {
+  char *name;
+  fn_kind kind;
+  dynamic_array returntypes;
+  dynamic_array parameters;
+
+  union {
+    struct {
+      ht *variables;
+      dynamic_array instrs;
+    } defined;
+
+    struct {
+      //...
+    } declared;
+  };
+} fn_node;
+
+typedef struct return_node {
+  dynamic_array returnvals;
+} return_node;
+
 /*
  * @struct instr_node: represents an instruction. (definition)
  */
@@ -231,6 +269,10 @@ typedef struct instr_node {
     fasm_define_node fasm_def;
     fasm_node fasm;
     loop_node loop;
+    fn_node fn_define_node;
+    fn_node fn_declare_node;
+    return_node ret_node;
+    fn_call_node fn_call;
   };
 } instr_node;
 

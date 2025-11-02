@@ -1,9 +1,11 @@
 #include "parser.h"
 #include "ast.h"
 #include "ds/dynamic_array.h"
+#include "ds/ht.h"
 #include "lexer.h"
 #include "token.h"
 #include "utils.h"
+#include "var.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -83,6 +85,30 @@ static void parse_term_for_expr(parser *p, term_node *term,
         scu_perror(errors, "Expected ']' at line %d\n", token.line);
       }
       parser_advance(p);
+    } else if (token.kind == TOKEN_LPAREN) {
+      term->kind = TERM_FUNCTION_CALL;
+      term->fn_call.name = term->identifier.name;
+
+      dynamic_array_init(&term->fn_call.parameters, sizeof(expr_node));
+      parser_advance(p);
+      parser_current(p, &token, errors);
+
+      while (token.kind != TOKEN_RPAREN) {
+        expr_node *arg = parse_expr(p, errors);
+        dynamic_array_append(&term->fn_call.parameters, arg);
+        free(arg);
+
+        parser_current(p, &token, errors);
+        if (token.kind == TOKEN_COMMA) {
+          parser_advance(p);
+          parser_current(p, &token, errors);
+        }
+      }
+
+      if (token.kind != TOKEN_RPAREN) {
+        scu_perror(errors, "Expected ')' at line %d\n", token.line);
+      }
+      parser_advance(p);
     }
   } else if (token.kind == TOKEN_ADDRESS_OF) {
     term->kind = TERM_ADDOF;
@@ -146,6 +172,30 @@ static expr_node *parse_factor(parser *p, unsigned int *errors) {
           scu_perror(errors, "Expected ']' at line %d\n", token.line);
         }
         parser_advance(p);
+      } else if (token.kind == TOKEN_LPAREN) {
+        node->term.kind = TERM_FUNCTION_CALL;
+        node->term.fn_call.name = node->term.identifier.name;
+
+        dynamic_array_init(&node->term.fn_call.parameters, sizeof(expr_node));
+        parser_advance(p);
+        parser_current(p, &token, errors);
+
+        while (token.kind != TOKEN_RPAREN) {
+          expr_node *arg = parse_expr(p, errors);
+          dynamic_array_append(&node->term.fn_call.parameters, arg);
+          free(arg);
+
+          parser_current(p, &token, errors);
+          if (token.kind == TOKEN_COMMA) {
+            parser_advance(p);
+            parser_current(p, &token, errors);
+          }
+        }
+
+        if (token.kind != TOKEN_RPAREN) {
+          scu_perror(errors, "Expected ')' at line %d\n", token.line);
+        }
+        parser_advance(p);
       }
       return node;
     } else if (token.kind == TOKEN_POINTER) {
@@ -172,7 +222,7 @@ static expr_node *parse_factor(parser *p, unsigned int *errors) {
     return node;
   } else {
     scu_perror(errors, "Syntax error: expected term or '('\n");
-    exit(1);
+    scu_check_errors(errors);
   }
   return NULL;
 }
@@ -439,7 +489,55 @@ static void parse_declare(parser *p, instr_node *instr, unsigned int *errors) {
 }
 
 /*
- * @brief: parse an if instruction.
+ * @brief: parse a function call.
+ *
+ * @param p: pointer to the parser state.
+ * @param instr: pointer to a newly malloc'd instr struct.
+ * @param errors: counter variable to increment when an error is encountered.
+ */
+static void parse_fn_call(parser *p, instr_node *instr, unsigned int *errors) {
+  token token = {0};
+  parser_current(p, &token, errors);
+
+  instr->kind = INSTR_FN_CALL;
+  instr->line = token.line;
+  instr->fn_call.name = token.value.str;
+
+  parser_advance(p);
+  parser_current(p, &token, errors);
+
+  if (token.kind != TOKEN_LPAREN) {
+    scu_perror(errors, "Expected '(' after function name [line %d]\n",
+               token.line);
+  }
+
+  parser_advance(p);
+  parser_current(p, &token, errors);
+
+  dynamic_array_init(&instr->fn_call.parameters, sizeof(expr_node));
+
+  while (token.kind != TOKEN_RPAREN) {
+    expr_node *arg = parse_expr(p, errors);
+    dynamic_array_append(&instr->fn_call.parameters, arg);
+    free(arg);
+
+    parser_current(p, &token, errors);
+    if (token.kind == TOKEN_COMMA) {
+      parser_advance(p);
+      parser_current(p, &token, errors);
+    }
+  }
+
+  if (token.kind != TOKEN_RPAREN) {
+    scu_perror(errors, "Expected ')' after function arguments [line %d]\n",
+               token.line);
+  }
+
+  parser_advance(p);
+}
+
+/*
+ * @brief: parse an assign instruction.
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
@@ -488,6 +586,9 @@ static void parse_assign(parser *p, instr_node *instr, unsigned int *errors) {
     expr_node *expr = parse_expr(p, errors);
     instr->assign_to_array_subscript.expr_to_assign = *expr;
     free(expr);
+  } else if (token.kind == TOKEN_LPAREN) {
+    p->index--;
+    parse_fn_call(p, instr, errors);
   } else {
     instr->kind = INSTR_ASSIGN;
     instr->line = ident_line;
@@ -714,6 +815,166 @@ static void parse_loop(parser *p, instr_node *instr, loop_kind kind,
 }
 
 /*
+ * @brief: parse functions.
+ *
+ * @param p: pointer to the parser state.
+ * @param instr: pointer to a newly malloc'd instr struct.
+ * @param loop_counter: counter for unique loop IDs.
+ * @param errors: counter variable to increment when an error is encountered.
+ */
+static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter,
+                     unsigned int *errors) {
+  token token = {0};
+  parser_current(p, &token, errors);
+  instr->kind = INSTR_FN_DECLARE;
+  instr->line = token.line;
+  instr->fn_declare_node.kind = FN_DECLARED;
+
+  parser_advance(p);
+  parser_current(p, &token, errors);
+  instr->fn_declare_node.name = token.value.str;
+
+  parser_advance(p);
+  parser_current(p, &token, errors);
+  if (token.kind != TOKEN_LPAREN) {
+    scu_perror(errors, "Syntax error: expected '('\n");
+  }
+
+  parser_advance(p);
+  dynamic_array_init(&instr->fn_declare_node.parameters, sizeof(variable));
+  parser_current(p, &token, errors);
+
+  while (token.kind != TOKEN_RPAREN) {
+    variable param = {0};
+
+    switch (token.kind) {
+    case TOKEN_TYPE_INT:
+      param.type = TYPE_INT;
+      break;
+    case TOKEN_TYPE_CHAR:
+      param.type = TYPE_CHAR;
+      break;
+    default:
+      break;
+    }
+
+    parser_advance(p);
+    parser_current(p, &token, errors);
+    param.name = token.value.str;
+
+    dynamic_array_append(&instr->fn_declare_node.parameters, &param);
+
+    parser_advance(p);
+    parser_current(p, &token, errors);
+    if (token.kind == TOKEN_COMMA) {
+      parser_advance(p);
+      parser_current(p, &token, errors);
+    }
+  }
+
+  if (token.kind != TOKEN_RPAREN) {
+    scu_perror(errors, "Syntax error: expected ')'\n");
+  }
+
+  parser_advance(p);
+  dynamic_array_init(&instr->fn_declare_node.returntypes, sizeof(type));
+  parser_current(p, &token, errors);
+  if (token.kind == TOKEN_COLON) {
+    parser_advance(p);
+    parser_current(p, &token, errors);
+
+    while (token.kind != TOKEN_LBRACE && token.kind != TOKEN_END) {
+      type ret_type;
+
+      switch (token.kind) {
+      case TOKEN_TYPE_INT:
+        ret_type = TYPE_INT;
+        break;
+      case TOKEN_TYPE_CHAR:
+        ret_type = TYPE_CHAR;
+        break;
+      default:
+        ret_type = TYPE_VOID;
+        break;
+      }
+
+      dynamic_array_append(&instr->fn_declare_node.returntypes, &ret_type);
+
+      parser_advance(p);
+      parser_current(p, &token, errors);
+      if (token.kind == TOKEN_COMMA) {
+        parser_advance(p);
+        parser_current(p, &token, errors);
+      } else {
+        break;
+      }
+    }
+  }
+
+  if (token.kind == TOKEN_LBRACE) {
+    instr->kind = INSTR_FN_DEFINE;
+    instr->fn_define_node.kind = FN_DEFINED;
+
+    instr->fn_define_node.defined.variables = ht_new(sizeof(variable));
+
+    dynamic_array_init(&instr->fn_define_node.defined.instrs,
+                       sizeof(instr_node));
+
+    parser_advance(p);
+    parser_current(p, &token, errors);
+
+    while (token.kind != TOKEN_RBRACE) {
+      instr_node *_instr = scu_checked_malloc(sizeof(instr_node));
+      parse_instr(p, _instr, loop_counter, errors);
+      dynamic_array_append(&instr->fn_define_node.defined.instrs, _instr);
+      free(_instr);
+      parser_current(p, &token, errors);
+    }
+
+    if (token.kind != TOKEN_RBRACE) {
+      scu_perror(errors, "Syntax error: expected '}'\n");
+    }
+
+    parser_advance(p);
+  }
+}
+
+/*
+ * @brief: parse return statements.
+ *
+ * @param p: pointer to the parser state.
+ * @param instr: pointer to a newly malloc'd instr struct.
+ * @param errors: counter variable to increment when an error is encountered.
+ */
+static void parse_ret(parser *p, instr_node *instr, unsigned int *errors) {
+  token token = {0};
+  parser_current(p, &token, errors);
+  instr->kind = INSTR_RETURN;
+  instr->line = token.line;
+  dynamic_array_init(&instr->ret_node.returnvals, sizeof(expr_node));
+
+  parser_advance(p);
+
+  parser_current(p, &token, errors);
+
+  while (token.kind != TOKEN_RBRACE) {
+    expr_node *expr = parse_expr(p, errors);
+
+    dynamic_array_append(&instr->ret_node.returnvals, expr);
+    free(expr);
+
+    parser_current(p, &token, errors);
+
+    if (token.kind == TOKEN_COMMA) {
+      parser_advance(p);
+      parser_current(p, &token, errors);
+    } else {
+      break;
+    }
+  }
+}
+
+/*
  * @brief: parse an instruction. (definition)
  *
  * @param p: pointer to the parser state.
@@ -767,6 +1028,15 @@ static void parse_instr(parser *p, instr_node *instr, size_t *loop_counter,
   case TOKEN_CONTINUE:
     instr->kind = INSTR_LOOP_CONTINUE;
     instr->line = token.line;
+    parser_advance(p);
+    break;
+  case TOKEN_FN:
+    parse_fn(p, instr, loop_counter, errors);
+    break;
+  case TOKEN_RETURN:
+    parse_ret(p, instr, errors);
+    break;
+  case TOKEN_COMMENT:
     parser_advance(p);
     break;
   default:
@@ -857,6 +1127,18 @@ static void check_term_and_print(term_node *term) {
     break;
   case TERM_ARRAY_LITERAL:
     printf("{...}");
+    break;
+  case TERM_FUNCTION_CALL:
+    printf("%s(", term->fn_call.name);
+    for (size_t i = 0; i < term->fn_call.parameters.count; i++) {
+      expr_node arg;
+      dynamic_array_get(&term->fn_call.parameters, i, &arg);
+      check_expr_and_print(&arg);
+      if (i < term->fn_call.parameters.count - 1) {
+        printf(", ");
+      }
+    }
+    printf(")");
     break;
   }
 }
@@ -1095,6 +1377,136 @@ static void print_instr(instr_node *instr) {
 
   case INSTR_LOOP_CONTINUE:
     printf("loop continue\n");
+    break;
+
+  case INSTR_FN_DECLARE:
+    printf("function %s: %s(",
+           instr->fn_declare_node.kind == FN_DECLARED ? "declaration"
+                                                      : "definition",
+           instr->fn_declare_node.name);
+
+    for (size_t i = 0; i < instr->fn_declare_node.parameters.count; i++) {
+      variable param;
+      dynamic_array_get(&instr->fn_declare_node.parameters, i, &param);
+      check_var_and_print(&param);
+      if (i < instr->fn_declare_node.parameters.count - 1) {
+        printf(", ");
+      }
+    }
+    printf(")");
+
+    if (instr->fn_declare_node.returntypes.count > 0) {
+      printf(" : ");
+      for (size_t i = 0; i < instr->fn_declare_node.returntypes.count; i++) {
+        type ret_type;
+        dynamic_array_get(&instr->fn_declare_node.returntypes, i, &ret_type);
+        switch (ret_type) {
+        case TYPE_INT:
+          printf("int");
+          break;
+        case TYPE_CHAR:
+          printf("char");
+          break;
+        case TYPE_POINTER:
+          printf("pointer");
+          break;
+        default:
+          printf("unknown");
+          break;
+        }
+        if (i < instr->fn_declare_node.returntypes.count - 1) {
+          printf(", ");
+        }
+      }
+    }
+    printf("\n");
+
+    if (instr->fn_declare_node.kind == FN_DEFINED) {
+      printf("\tfunction body:\n");
+      for (size_t i = 0; i < instr->fn_declare_node.defined.instrs.count; i++) {
+        instr_node body_instr;
+        dynamic_array_get(&instr->fn_declare_node.defined.instrs, i,
+                          &body_instr);
+        printf("\t\t");
+        print_instr(&body_instr);
+      }
+    }
+    break;
+
+  case INSTR_FN_DEFINE:
+    printf("function definition: %s(", instr->fn_define_node.name);
+    for (size_t i = 0; i < instr->fn_define_node.parameters.count; i++) {
+      variable param;
+      dynamic_array_get(&instr->fn_define_node.parameters, i, &param);
+      check_var_and_print(&param);
+      if (i < instr->fn_define_node.parameters.count - 1) {
+        printf(", ");
+      }
+    }
+    printf(")");
+
+    if (instr->fn_define_node.returntypes.count > 0) {
+      printf(" : ");
+      for (size_t i = 0; i < instr->fn_define_node.returntypes.count; i++) {
+        type ret_type;
+        dynamic_array_get(&instr->fn_define_node.returntypes, i, &ret_type);
+        switch (ret_type) {
+        case TYPE_INT:
+          printf("int");
+          break;
+        case TYPE_CHAR:
+          printf("char");
+          break;
+        case TYPE_POINTER:
+          printf("pointer");
+          break;
+        default:
+          printf("unknown");
+          break;
+        }
+        if (i < instr->fn_define_node.returntypes.count - 1) {
+          printf(", ");
+        }
+      }
+    }
+    printf("\n");
+    printf("\tfunction body:\n");
+    for (size_t i = 0; i < instr->fn_define_node.defined.instrs.count; i++) {
+      instr_node body_instr;
+      dynamic_array_get(&instr->fn_define_node.defined.instrs, i, &body_instr);
+      printf("\t\t");
+      print_instr(&body_instr);
+    }
+    break;
+
+  case INSTR_RETURN:
+    printf("return: ");
+    if (instr->ret_node.returnvals.count == 0) {
+      printf("void\n");
+    } else {
+      for (size_t i = 0; i < instr->ret_node.returnvals.count; i++) {
+        expr_node ret_expr;
+        dynamic_array_get(&instr->ret_node.returnvals, i, &ret_expr);
+        check_expr_and_print(&ret_expr);
+        if (i < instr->ret_node.returnvals.count - 1) {
+          printf(", ");
+        }
+      }
+      printf("\n");
+    }
+    break;
+
+  case INSTR_FN_CALL:
+    printf("function call: %s(", instr->fn_call.name);
+    for (size_t i = 0; i < instr->fn_call.parameters.count; i++) {
+      expr_node arg;
+      dynamic_array_get(&instr->fn_call.parameters, i, &arg);
+      check_expr_and_print(&arg);
+      if (i < instr->fn_call.parameters.count - 1) {
+        printf(", ");
+      }
+    }
+    printf(")\n");
     break;
   }
 }

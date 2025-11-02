@@ -1,15 +1,19 @@
 -include "io.scl"
 
-int number
-fasm "input %d", number
-
-int count = 0
-
-loop {
-  if number == 0 then break
-  number = number / 10
-  count = count + 1
-  continue
+fn main() : int {
+  int number
+  fasm "input %d", number
+  
+  int count = 0
+  
+  loop {
+    if number == 0 then break
+    number = number / 10
+    count = count + 1
+    continue
+  }
+  
+  fasm "output_int %d", count
+  
+  return 0
 }
-
-fasm "output_int %d", count

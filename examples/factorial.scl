@@ -1,13 +1,17 @@
 -include "io.scl"
 
-int n
-fasm "input %d", n
-
-int result = 1
-
-while n > 1 {
-  result = result * n
-  n = n - 1
+fn main() : int {
+  int n
+  fasm "input %d", n
+  
+  int result = 1
+  
+  while n > 1 {
+    result = result * n
+    n = n - 1
+  }
+  
+  fasm "output_int %d", result
+  
+  return 0
 }
-
-fasm "output_int %d", result

@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     parser_print_program(state->program);
 
   // Semantic Analysis
-  check_semantics(&state->program->instrs, state->variables,
+  check_semantics(&state->program->instrs, state->variables, state->functions,
                   &state->error_count);
 
   // Semantic Debug Statements
@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
 
   // Codegen & Assembler
   instrs_to_asm(state->program, state->variables, state->loops,
-                state->output_filename, &state->error_count);
+                state->functions, state->output_filename, &state->error_count);
 
   end = clock();
   time_taken = (double)(end - start) / CLOCKS_PER_SEC;

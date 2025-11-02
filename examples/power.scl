@@ -1,19 +1,23 @@
 -include "io.scl"
 
-int base
-int exponent
-int result = 1
-int counter = 0
-
-fasm "input %d", base
-fasm "input %d", exponent
-
-if exponent == 0 then goto :end
-
-while counter < exponent {
-  result = result * base
-  counter = counter + 1
+fn main() : int {
+  int base
+  int exponent
+  int result = 1
+  int counter = 0
+  
+  fasm "input %d", base
+  fasm "input %d", exponent
+  
+  if exponent == 0 then goto :end
+  
+  while counter < exponent {
+    result = result * base
+    counter = counter + 1
+  }
+  
+  :end
+  fasm "output_int %d", result
+  
+  return 0
 }
-
-:end
-fasm "output_int %d", result

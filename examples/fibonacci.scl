@@ -1,24 +1,27 @@
 -include "io.scl"
 
-int const_zero = 0
-int const_one = 1
-
-int n
-fasm "input %d", n
-
-if n == 0 then fasm "output_int %d", const_zero
-if n == 1 then fasm "output_int %d", const_one
-
-int a = 0
-int b = 1
-int count = 2
-int fib = 0
-
-while count < n {
-  fib = a + b
-  a = b
-  b = fib
-  count = count + 1
+fn main() : int {
+  int const_zero = 0
+  int const_one = 1
+  
+  int n
+  fasm "input %d", n
+  
+  if n == 0 then fasm "output_int %d", const_zero
+  if n == 1 then fasm "output_int %d", const_one
+  
+  int a = 0
+  int b = 1
+  int count = 2
+  int fib = 0
+  
+  while count < n {
+    fib = a + b
+    a = b
+    b = fib
+    count = count + 1
+  }
+  
+  fasm "output_int %d", fib
+  return 0
 }
-
-fasm "output_int %d", fib

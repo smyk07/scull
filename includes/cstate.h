@@ -85,6 +85,7 @@ typedef struct cstate {
   program_node *program;
   ht *variables;
   stack *loops;
+  ht *functions;
 } cstate;
 
 /*

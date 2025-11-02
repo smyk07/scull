@@ -1,38 +1,42 @@
 -include "io.scl"
 
-int n
-fasm "input %d", n
-n = n - 1
-
-int count = 0
-int num = 2
-
-fasm "output_int %d", num
-
-while count != n {
-  int i = 2
-  int is_prime = 1
-  int sqrt = 0
-  int sqr = sqrt * sqrt
-
-  while sqr <= num {
-    sqrt = sqrt + 1
-    sqr = sqrt * sqrt
-  }
-
-  while i <= sqrt {
-    int temp = num / i
-    int mul = temp * i
-    if mul == num {
-      is_prime = 0
+fn main() : int {
+  int n
+  fasm "input %d", n
+  n = n - 1
+  
+  int count = 0
+  int num = 2
+  
+  fasm "output_int %d", num
+  
+  while count != n {
+    int i = 2
+    int is_prime = 1
+    int sqrt = 0
+    int sqr = sqrt * sqrt
+  
+    while sqr <= num {
+      sqrt = sqrt + 1
+      sqr = sqrt * sqrt
     }
-    i = i + 1
+  
+    while i <= sqrt {
+      int temp = num / i
+      int mul = temp * i
+      if mul == num {
+        is_prime = 0
+      }
+      i = i + 1
+    }
+  
+    if is_prime == 1 {
+      fasm "output_int %d", num
+      count = count + 1
+    }
+  
+    num = num + 1
   }
-
-  if is_prime == 1 {
-    fasm "output_int %d", num
-    count = count + 1
-  }
-
-  num = num + 1
+  
+  return 0
 }

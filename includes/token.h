@@ -26,6 +26,8 @@ typedef enum token_kind {
   TOKEN_DO_WHILE,
   TOKEN_CONTINUE,
   TOKEN_BREAK,
+  TOKEN_FN,
+  TOKEN_RETURN,
 
   /*
    * Preprocessor Directives
@@ -56,6 +58,7 @@ typedef enum token_kind {
    * Delimiters
    */
   TOKEN_COMMA,
+  TOKEN_COLON,
 
   /*
    * Arithmetic Operators

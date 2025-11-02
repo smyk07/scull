@@ -12,6 +12,29 @@
 #include <string.h>
 
 /*
+ * @brief: generate assembly for a function call
+ *
+ * @param fn_call: pointer to fn_call_node
+ * @param variables: hash table of variables
+ * @param program: pointer to program_node
+ * @param errors: error counter
+ */
+static void fn_call_asm(fn_call_node *fn_call, ht *variables,
+                        program_node *program, unsigned int *errors);
+
+/*
+ * @brief: generate assembly for individual expressions. (declaration)
+ *
+ * @param instr: pointer ot an instr_node.
+ * @param variables: hash table of variables.
+ * @param if_count: counter for if instructions.
+ * @param errors: counter variable to increment when an error is encountered.
+ */
+static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
+                      stack *loops, ht *functions, program_node *program,
+                      unsigned int *errors);
+
+/*
  * @brief: generate assembly for arithmetic expressions. (declaration)
  *
  * @param expr: pointer to an expr_node.
@@ -181,6 +204,11 @@ static void term_asm(term_node *term, ht *variables, program_node *program,
     // nothing here cuz its done at initialization itself
     break;
   }
+
+  case TERM_FUNCTION_CALL: {
+    fn_call_asm(&term->fn_call, variables, program, errors);
+    break;
+  }
   }
 }
 
@@ -275,7 +303,195 @@ static void rel_asm(rel_node *rel, ht *variables, program_node *program,
 }
 
 /*
- * @brief: generate assembly for individual expressions.
+ * @brief: calculate stack size for a function
+ *
+ * @param fn: pointer to fn_node
+ * @param errors: error counter
+ * @return: total stack size needed (aligned to 16 bytes)
+ */
+static size_t calculate_function_stack_size(fn_node *fn, unsigned int *errors) {
+  if (fn->kind != FN_DEFINED)
+    return 0;
+
+  size_t total = fn->parameters.count * 8;
+  total += fn->defined.variables->count * 8;
+
+  for (size_t i = 0; i < fn->defined.instrs.count; i++) {
+    instr_node instr;
+    dynamic_array_get(&fn->defined.instrs, i, &instr);
+
+    if (instr.kind == INSTR_DECLARE_ARRAY) {
+      total += get_array_size_declare(&instr.declare_array, errors) * 4;
+    } else if (instr.kind == INSTR_INITIALIZE_ARRAY) {
+      total += get_array_size_initialize(&instr.initialize_array, errors) * 4;
+    }
+  }
+
+  if (total % 16 != 0) {
+    total += 16 - (total % 16);
+  }
+
+  return total;
+}
+
+/*
+ * @brief: generate assembly for a return statement
+ *
+ * @param ret: pointer to return_node
+ * @param variables: hash table of variables
+ * @param program: pointer to program_node
+ * @param stack_size: size of function's stack frame
+ * @param errors: error counter
+ */
+static void return_asm(return_node *ret, ht *variables, program_node *program,
+                       size_t stack_size, unsigned int *errors) {
+  if (ret->returnvals.count > 0) {
+    expr_node ret_expr;
+    dynamic_array_get(&ret->returnvals, 0, &ret_expr);
+    expr_asm(&ret_expr, variables, program, errors);
+  } else {
+    printf("    xor rax, rax\n");
+  }
+
+  if (stack_size > 0) {
+    printf("    add rsp, %zu\n", stack_size);
+  }
+  printf("    pop rbp\n");
+  printf("    ret\n");
+}
+
+/*
+ * @brief: generate assembly for a function definition
+ *
+ * @param fn: pointer to fn_node
+ * @param functions: hash table of all functions
+ * @param errors: error counter
+ */
+static void function_asm(fn_node *fn, ht *functions, unsigned int *errors) {
+  if (fn->kind != FN_DEFINED)
+    return;
+
+  printf("\n%s:\n", fn->name);
+
+  printf("    push rbp\n");
+  printf("    mov rbp, rsp\n");
+
+  size_t stack_size = calculate_function_stack_size(fn, errors);
+  if (stack_size > 0) {
+    printf("    sub rsp, %zu\n", stack_size);
+  }
+
+  const char *arg_regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
+  for (size_t i = 0; i < fn->parameters.count && i < 6; i++) {
+    variable param;
+    dynamic_array_get(&fn->parameters, i, &param);
+    printf("    mov qword [rbp - %zu], %s\n", (i + 1) * 8, arg_regs[i]);
+  }
+
+  unsigned int if_count = 0;
+  stack loops;
+  stack_init(&loops, sizeof(loop_node));
+
+  program_node fn_program = {.loop_counter = 0, .instrs = fn->defined.instrs};
+
+  int has_return = 0;
+  for (size_t i = 0; i < fn->defined.instrs.count; i++) {
+    instr_node instr;
+    dynamic_array_get(&fn->defined.instrs, i, &instr);
+
+    if (instr.kind == INSTR_RETURN) {
+      return_asm(&instr.ret_node, fn->defined.variables, &fn_program,
+                 stack_size, errors);
+      has_return = 1;
+    } else {
+      instr_asm(&instr, fn->defined.variables, &if_count, &loops, functions,
+                &fn_program, errors);
+    }
+  }
+
+  if (!has_return) {
+    printf("    xor rax, rax\n");
+    printf("    add rsp, %zu\n", stack_size);
+    printf("    pop rbp\n");
+    printf("    ret\n");
+  }
+
+  stack_free(&loops);
+}
+
+/*
+ * @brief: generate assembly for a function call
+ *
+ * @param fn_call: pointer to fn_call_node
+ * @param variables: hash table of variables
+ * @param program: pointer to program_node
+ * @param errors: error counter
+ */
+static void fn_call_asm(fn_call_node *fn_call, ht *variables,
+                        program_node *program, unsigned int *errors) {
+  const char *arg_regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
+
+  size_t stack_arg_count = 0;
+  if (fn_call->parameters.count > 6) {
+    stack_arg_count = fn_call->parameters.count - 6;
+  }
+
+  if (stack_arg_count > 0) {
+    for (int i = fn_call->parameters.count - 1; i >= 6; i--) {
+      expr_node arg;
+      dynamic_array_get(&fn_call->parameters, i, &arg);
+      expr_asm(&arg, variables, program, errors);
+      printf("    push rax\n");
+    }
+  }
+
+  size_t total_pushed = stack_arg_count * 8;
+  int needs_padding = 0;
+  if ((total_pushed + 8) % 16 != 0) {
+    needs_padding = 1;
+    printf("    sub rsp, 8\n");
+  }
+
+  if (fn_call->parameters.count > 1 && fn_call->parameters.count <= 6) {
+    for (size_t i = 0; i < fn_call->parameters.count; i++) {
+      expr_node arg;
+      dynamic_array_get(&fn_call->parameters, i, &arg);
+      expr_asm(&arg, variables, program, errors);
+      printf("    push rax\n");
+    }
+    for (int i = fn_call->parameters.count - 1; i >= 0; i--) {
+      printf("    pop %s\n", arg_regs[i]);
+    }
+  } else if (fn_call->parameters.count == 1) {
+    expr_node arg;
+    dynamic_array_get(&fn_call->parameters, 0, &arg);
+    expr_asm(&arg, variables, program, errors);
+    printf("    mov %s, rax\n", arg_regs[0]);
+  } else if (fn_call->parameters.count > 6) {
+    for (size_t i = 0; i < 6; i++) {
+      expr_node arg;
+      dynamic_array_get(&fn_call->parameters, i, &arg);
+      expr_asm(&arg, variables, program, errors);
+      printf("    push rax\n");
+    }
+    for (int i = 5; i >= 0; i--) {
+      printf("    pop %s\n", arg_regs[i]);
+    }
+  }
+
+  printf("    call %s\n", fn_call->name);
+
+  if (needs_padding) {
+    printf("    add rsp, 8\n");
+  }
+  if (stack_arg_count > 0) {
+    printf("    add rsp, %zu\n", stack_arg_count * 8);
+  }
+}
+
+/*
+ * @brief: generate assembly for individual expressions. (definition)
  *
  * @param instr: pointer ot an instr_node.
  * @param variables: hash table of variables.
@@ -283,7 +499,7 @@ static void rel_asm(rel_node *rel, ht *variables, program_node *program,
  * @param errors: counter variable to increment when an error is encountered.
  */
 static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
-                      stack *loops, program_node *program,
+                      stack *loops, ht *functions, program_node *program,
                       unsigned int *errors) {
   switch (instr->kind) {
   case INSTR_DECLARE:
@@ -351,14 +567,16 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
     printf("    jz .endif%d\n", label);
     switch (instr->if_.kind) {
     case IF_SINGLE_INSTR:
-      instr_asm(instr->if_.instr, variables, if_count, loops, program, errors);
+      instr_asm(instr->if_.instr, variables, if_count, loops, functions,
+                program, errors);
       break;
 
     case IF_MULTI_INSTR:
       for (size_t i = 0; i < instr->if_.instrs.count; i++) {
         struct instr_node _instr;
         dynamic_array_get(&instr->if_.instrs, i, &_instr);
-        instr_asm(&_instr, variables, if_count, loops, program, errors);
+        instr_asm(&_instr, variables, if_count, loops, functions, program,
+                  errors);
       }
       break;
     }
@@ -403,7 +621,8 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
       for (unsigned int i = 0; i < instr->loop.instrs.count; i++) {
         struct instr_node _instr;
         dynamic_array_get(&instr->loop.instrs, i, &_instr);
-        instr_asm(&_instr, variables, if_count, loops, program, errors);
+        instr_asm(&_instr, variables, if_count, loops, functions, program,
+                  errors);
       }
       printf(".loop_%zu_end:\n", instr->loop.loop_id);
       break;
@@ -416,7 +635,8 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
       for (unsigned int i = 0; i < instr->loop.instrs.count; i++) {
         struct instr_node _instr;
         dynamic_array_get(&instr->loop.instrs, i, &_instr);
-        instr_asm(&_instr, variables, if_count, loops, program, errors);
+        instr_asm(&_instr, variables, if_count, loops, functions, program,
+                  errors);
       }
       printf(".loop_%zu_test:\n", instr->loop.loop_id);
       rel_asm(&instr->loop.break_condition, variables, program, errors);
@@ -449,6 +669,26 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
       break;
     }
     break;
+
+  case INSTR_FN_DEFINE:
+    break;
+
+  case INSTR_FN_DECLARE:
+    break;
+
+  case INSTR_FN_CALL:
+    fn_call_asm(&instr->fn_call, variables, program, errors);
+    break;
+
+  case INSTR_RETURN:
+    if (instr->ret_node.returnvals.count > 0) {
+      expr_node ret_expr;
+      dynamic_array_get(&instr->ret_node.returnvals, 0, &ret_expr);
+      expr_asm(&ret_expr, variables, program, errors);
+    } else {
+      printf("    xor rax, rax\n");
+    }
+    break;
   }
 }
 
@@ -474,18 +714,26 @@ static size_t calculate_total_stack_size(ht *variables, program_node *program,
 }
 
 void instrs_to_asm(program_node *program, ht *variables, stack *loops,
-                   const char *filename, unsigned int *errors) {
+                   ht *functions, const char *filename, unsigned int *errors) {
   unsigned int if_count = 0;
 
   char *output_asm_file = scu_format_string("%s.s", filename);
   freopen(output_asm_file, "w", stdout);
 
-  // Initialization and fasm definitions
-  printf("format ELF64 executable\n");
-  printf("LINE_MAX equ 1024\n");
+  int has_main = 0;
+  fn_node *main_fn = ht_search(functions, "main");
+  if (main_fn) {
+    has_main = 1;
+  }
 
-  printf("entry _start\n");
-  printf("segment readable executable\n");
+  if (has_main) {
+    printf("format ELF64 executable\n");
+    printf("LINE_MAX equ 1024\n");
+    printf("entry _start\n");
+    printf("segment readable executable\n");
+  } else {
+    printf("section '.text' executable\n\n");
+  }
 
   for (unsigned int i = 0; i < program->instrs.count; i++) {
     struct instr_node instr;
@@ -494,39 +742,78 @@ void instrs_to_asm(program_node *program, ht *variables, stack *loops,
     if (instr.kind == INSTR_FASM_DEFINE) {
       printf("%s\n", instr.fasm_def.content);
       dynamic_array_remove(&program->instrs, i);
+      i--;
     }
   }
-
-  // main function
-  printf("\nmain:\n");
-  printf("    push rbp\n");
-  printf("    mov rbp, rsp\n");
-
-  size_t stack_size = calculate_total_stack_size(variables, program, errors);
-  printf("    sub rsp, %zu\n", stack_size);
 
   for (unsigned int i = 0; i < program->instrs.count; i++) {
     struct instr_node instr;
     dynamic_array_get(&program->instrs, i, &instr);
 
-    instr_asm(&instr, variables, &if_count, loops, program, errors);
+    if (instr.kind == INSTR_FN_DEFINE) {
+      function_asm(&instr.fn_define_node, functions, errors);
+    }
   }
 
-  printf("    add rsp, %zu\n", stack_size);
-  printf("    pop rbp\n");
-  printf("    ret\n");
+  int has_global_code = 0;
+  for (unsigned int i = 0; i < program->instrs.count; i++) {
+    struct instr_node instr;
+    dynamic_array_get(&program->instrs, i, &instr);
 
-  // entrypoint
-  printf("\n_start:\n");
-  printf("    call main\n");
-  printf("    mov rax, 60\n");
-  printf("    xor rdi, rdi\n");
-  printf("    syscall\n\n");
+    if (instr.kind != INSTR_FN_DEFINE && instr.kind != INSTR_FN_DECLARE &&
+        instr.kind != INSTR_FASM_DEFINE) {
+      has_global_code = 1;
+      break;
+    }
+  }
 
-  printf("segment readable writeable\n");
-  printf("line rb LINE_MAX\n");
-  printf("newline db 10, 0\n");
-  printf("char_buf db 0, 0\n");
+  if (has_global_code) {
+    printf("\n__global:\n");
+    printf("    push rbp\n");
+    printf("    mov rbp, rsp\n");
+
+    size_t stack_size = calculate_total_stack_size(variables, program, errors);
+    if (stack_size > 0) {
+      printf("    sub rsp, %zu\n", stack_size);
+    }
+
+    for (unsigned int i = 0; i < program->instrs.count; i++) {
+      struct instr_node instr;
+      dynamic_array_get(&program->instrs, i, &instr);
+
+      if (instr.kind == INSTR_FN_DEFINE || instr.kind == INSTR_FN_DECLARE ||
+          instr.kind == INSTR_FASM_DEFINE) {
+        continue;
+      }
+
+      instr_asm(&instr, variables, &if_count, loops, functions, program,
+                errors);
+    }
+
+    if (stack_size > 0) {
+      printf("    add rsp, %zu\n", stack_size);
+    }
+    printf("    pop rbp\n");
+    printf("    ret\n");
+  }
+
+  if (has_main) {
+    printf("\n_start:\n");
+    if (has_global_code) {
+      printf("    call __global\n");
+    }
+    printf("    call main\n");
+    printf("    mov rdi, rax\n");
+    printf("    mov rax, 60\n");
+    printf("    syscall\n\n");
+  }
+
+  if (has_main) {
+    printf("segment readable writeable\n");
+    printf("line rb LINE_MAX\n");
+    printf("newline db 10, 0\n");
+    printf("char_buf db 0, 0\n");
+  }
 
   fflush(stdout);
   fclose(stdout);

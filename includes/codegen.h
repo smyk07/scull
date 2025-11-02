@@ -24,10 +24,11 @@ int evaluate_const_expr(expr_node *expr, unsigned int *errors);
  *
  * @param program: basically a wrapper around a dynamic_array of instructions.
  * @param variables: hash table of variables.
+ * @param functions: pointer to the functions hash table.
  * @param filename: filename needed for output file.
  * @param errors: counter variable to increment when an error is encountered.
  */
 void instrs_to_asm(program_node *program, ht *variables, stack *loops,
-                   const char *filename, unsigned int *errors);
+                   ht *functions, const char *filename, unsigned int *errors);
 
 #endif // !CODEGEN

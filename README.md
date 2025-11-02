@@ -36,9 +36,3 @@ Run the executable:
 ```
 ./examples/n_prime_numbers
 ```
-
-Cleanup:
-
-```
-make clean-sclc
-```

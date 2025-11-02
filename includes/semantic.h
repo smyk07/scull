@@ -16,9 +16,10 @@
  *
  * @param instrs: pointer to the dynamic_array of instructions.
  * @param variables: pointer to hash table of variable.
+ * @param functions: pointer to the functions hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-void check_semantics(dynamic_array *instrs, ht *variables,
+void check_semantics(dynamic_array *instrs, ht *variables, ht *functions,
                      unsigned int *errors);
 
 #endif // !SEMANTIC

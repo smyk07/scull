@@ -48,7 +48,7 @@ $(BIN_DIR):
 
 compile_commands.json:
 	@echo -e "$(GREEN)[BEAR]$(NC) Generating compile_commands.json"
-	@bear -- $(MAKE) clean sclc
+	@bear -- $(MAKE) clean-sclc sclc
 
 clean-sclc:
 	@echo -e "$(GREEN)[CLEAN]$(NC) Removing $(OBJ_DIR) $(BIN_DIR)"

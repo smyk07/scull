@@ -152,6 +152,8 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
   s->variables = ht_new(sizeof(variable));
 
+  s->functions = ht_new(sizeof(fn_node));
+
   return s;
 }
 
@@ -175,6 +177,8 @@ void cstate_free(cstate *s) {
   free(s->loops);
 
   ht_del_ht(s->variables);
+
+  ht_del_ht(s->functions);
 
   free(s);
 }

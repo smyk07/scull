@@ -287,14 +287,24 @@ static token lexer_next_token(lexer *l) {
 
   else if (l->ch == ':') {
     lexer_read_char(l);
-    string_slice slice = {.str = l->buffer + l->pos, .len = 0};
-    while (isalnum(l->ch) || l->ch == '_') {
-      slice.len += 1;
-      lexer_read_char(l);
+
+    if (isalnum(l->ch) || l->ch == '_') {
+      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
+      while (isalnum(l->ch) || l->ch == '_') {
+        slice.len += 1;
+        lexer_read_char(l);
+      }
+      char *value = NULL;
+      string_slice_to_owned(&slice, &value);
+      return (token){.kind = TOKEN_LABEL, .value.str = value, .line = l->line};
+    } else {
+      return (token){.kind = TOKEN_COLON, .value.str = NULL, .line = l->line};
     }
-    char *value = NULL;
-    string_slice_to_owned(&slice, &value);
-    return (token){.kind = TOKEN_LABEL, .value.str = value, .line = l->line};
+  }
+
+  else if (l->ch == ':') {
+    lexer_read_char(l);
+    return (token){.kind = TOKEN_COLON, .value.str = NULL, .line = l->line};
   }
 
   else if (isdigit(l->ch)) {
@@ -499,6 +509,16 @@ static token lexer_next_token(lexer *l) {
       return (token){.kind = TOKEN_BREAK, .value.str = NULL, .line = l->line};
     }
 
+    else if (strcmp(value, "fn") == 0) {
+      free(value);
+      return (token){.kind = TOKEN_FN, .value.str = NULL, .line = l->line};
+    }
+
+    else if (strcmp(value, "return") == 0) {
+      free(value);
+      return (token){.kind = TOKEN_RETURN, .value.str = NULL, .line = l->line};
+    }
+
     else {
       return (token){
           .kind = TOKEN_IDENTIFIER, .value.str = value, .line = l->line};
@@ -576,6 +596,10 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "continue";
   case TOKEN_BREAK:
     return "break";
+  case TOKEN_FN:
+    return "fn (signature begin)";
+  case TOKEN_RETURN:
+    return "return";
   case TOKEN_PDIR_INCLUDE:
     return "pdir_include";
   case TOKEN_TYPE_INT:
@@ -608,6 +632,8 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "square bracket close";
   case TOKEN_COMMA:
     return "comma";
+  case TOKEN_COLON:
+    return "colon";
   case TOKEN_ADD:
     return "add";
   case TOKEN_SUBTRACT:
