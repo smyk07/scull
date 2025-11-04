@@ -254,7 +254,7 @@ void ht_delete(ht *table, const char *key) {
   int index = ht_get_hash(key, table->capacity, 0);
   ht_item *item = table->items[index];
 
-  int i = 0;
+  int i = 1;
   while (item != NULL) {
     if (item != &HT_DELETED_ITEM) {
       if (strcmp(item->key, key) == 0) {
