@@ -260,6 +260,8 @@ void ht_delete(ht *table, const char *key) {
       if (strcmp(item->key, key) == 0) {
         ht_del_item(item);
         table->items[index] = &HT_DELETED_ITEM;
+        table->count--;
+        return;
       }
     }
     index = ht_get_hash(key, table->capacity, i);
@@ -267,5 +269,4 @@ void ht_delete(ht *table, const char *key) {
     i++;
   }
 
-  table->count++;
 }
