@@ -245,12 +245,6 @@ void *ht_search(ht *table, const char *key) {
 }
 
 void ht_delete(ht *table, const char *key) {
-  const int load = table->count * 100 / table->capacity;
-
-  if (load < 10) {
-    ht_resize_down(table);
-  }
-
   int index = ht_get_hash(key, table->capacity, 0);
   ht_item *item = table->items[index];
 
@@ -261,6 +255,11 @@ void ht_delete(ht *table, const char *key) {
         ht_del_item(item);
         table->items[index] = &HT_DELETED_ITEM;
         table->count--;
+
+        const int load = table->count * 100 / table->capacity;
+        if (load < 10)
+          ht_resize_down(table);
+
         return;
       }
     }
@@ -268,5 +267,4 @@ void ht_delete(ht *table, const char *key) {
     item = table->items[index];
     i++;
   }
-
 }
