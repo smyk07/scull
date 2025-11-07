@@ -76,9 +76,9 @@ int dynamic_array_insert(dynamic_array *da, size_t index, void *item) {
     da->capacity = new_capacity;
   }
 
-  memmove((char *)da->items + (index * da->item_size),
-          (char *)da->items + (index * da->item_size) + da->item_size,
-          (da->count * da->item_size) - ((da->count - index) * da->item_size));
+  memmove((char *)da->items + (index * da->item_size) + da->item_size,
+          (char *)da->items + (index * da->item_size),
+          ((da->count - index) * da->item_size));
   memcpy((char *)da->items + (index * da->item_size), item, da->item_size);
   da->count++;
   return 0;
