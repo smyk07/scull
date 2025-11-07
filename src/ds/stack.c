@@ -11,12 +11,7 @@ int stack_init(stack *s, size_t item_size) {
   }
   s->item_size = item_size;
   s->capacity = STACK_INITIAL_CAPACITY;
-  s->items = malloc(s->item_size * s->capacity);
-  if (!s->items) {
-    s->capacity = 0;
-    scu_perror(NULL, "Memory allocation failed in stack_init.\n");
-    return -1;
-  }
+  s->items = scu_checked_malloc(s->item_size * s->capacity);
   s->count = 0;
   return 0;
 }
@@ -31,11 +26,7 @@ static int stack_expand(stack *s) {
     return -1;
   }
   size_t new_capacity = s->capacity * STACK_RESIZE_FACTOR;
-  void *new_items = realloc(s->items, s->item_size * new_capacity);
-  if (!new_items) {
-    scu_perror(NULL, "Memory allocation failed in stack_expand.\n");
-    return -1;
-  }
+  void *new_items = scu_checked_realloc(s->items, s->item_size * new_capacity);
   s->items = new_items;
   s->capacity = new_capacity;
   return 0;
@@ -54,11 +45,7 @@ static int stack_shrink(stack *s) {
   if (new_capacity < STACK_INITIAL_CAPACITY) {
     new_capacity = STACK_INITIAL_CAPACITY;
   }
-  void *new_items = realloc(s->items, new_capacity * s->item_size);
-  if (new_items == NULL) {
-    scu_perror(NULL, "Memory allocation failed in stack_shrink.\n");
-    return -1;
-  }
+  void *new_items = scu_checked_realloc(s->items, new_capacity * s->item_size);
   s->items = new_items;
   s->capacity = new_capacity;
   return 0;
