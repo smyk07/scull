@@ -1,4 +1,5 @@
 #include "ds/ht.h"
+#include "utils.h"
 
 #include <math.h>
 #include <stddef.h>
@@ -83,9 +84,9 @@ static int ht_get_hash(const char *s, const int num_buckets,
  */
 static ht_item *ht_new_item(const char *k, const void *v,
                             const size_t value_size) {
-  ht_item *i = malloc(sizeof(ht_item));
+  ht_item *i = scu_checked_malloc(sizeof(ht_item));
   i->key = strdup(k);
-  i->value = malloc(value_size);
+  i->value = scu_checked_malloc(value_size);
   memcpy(i->value, v, value_size);
   return i;
 }
@@ -113,12 +114,12 @@ static ht_item HT_DELETED_ITEM = {NULL, NULL};
  * @param value_size: number of bytes the value will occupy.
  */
 static ht *ht_new_sized(const size_t base_capacity, const size_t value_size) {
-  ht *table = malloc(sizeof(ht));
+  ht *table = scu_checked_malloc(sizeof(ht));
 
   table->base_capacity = base_capacity;
   table->capacity = next_prime(table->base_capacity);
   table->count = 0;
-  table->items = calloc(table->capacity, sizeof(ht_item *));
+  table->items = scu_checked_malloc(table->capacity * sizeof(ht_item *));
   table->value_size = value_size;
 
   return table;
@@ -149,7 +150,7 @@ static void ht_resize(ht *table, const size_t base_capacity) {
   table->base_capacity = new_ht->base_capacity;
   table->count = new_ht->count;
 
-  const int tmp_size = table->capacity;
+  const size_t tmp_size = table->capacity;
   table->capacity = new_ht->capacity;
   new_ht->capacity = tmp_size;
 
@@ -166,7 +167,7 @@ static void ht_resize(ht *table, const size_t base_capacity) {
  * @param table: pointer to an initialized ht struct.
  */
 static void ht_resize_up(ht *table) {
-  const int new_size = table->base_capacity * 2;
+  const size_t new_size = table->base_capacity * 2;
   ht_resize(table, new_size);
 }
 
@@ -176,7 +177,7 @@ static void ht_resize_up(ht *table) {
  * @param table: pointer to an initialized ht struct.
  */
 static void ht_resize_down(ht *table) {
-  const int new_size = table->base_capacity / 2;
+  const size_t new_size = table->base_capacity / 2;
   ht_resize(table, new_size);
 }
 
@@ -197,18 +198,23 @@ void ht_del_ht(ht *table) {
 }
 
 void ht_insert(ht *table, const char *key, const void *value) {
-  const int load = table->count * 100 / table->capacity;
+  if (table == NULL || key == NULL)
+    return;
 
+  const size_t load = table->count * 100 / table->capacity;
   if (load > 70) {
     ht_resize_up(table);
   }
 
   ht_item *item = ht_new_item(key, value, table->value_size);
-  int index = ht_get_hash(item->key, table->capacity, 0);
+
+  size_t i = 0;
+  size_t max_probes = table->capacity;
+
+  int index = ht_get_hash(item->key, table->capacity, i);
   ht_item *current = table->items[index];
 
-  int i = 1;
-  while (current != NULL) {
+  while (current != NULL && i < max_probes) {
     if (current != &HT_DELETED_ITEM) {
       if (strcmp(current->key, key) == 0) {
         ht_del_item(current);
@@ -216,9 +222,16 @@ void ht_insert(ht *table, const char *key, const void *value) {
         return;
       }
     }
-    index = ht_get_hash(item->key, table->capacity, i);
-    current = table->items[index];
     i++;
+    index = ht_get_hash(item->key, table->capacity, (int)i);
+    current = table->items[index];
+  }
+
+  if (i >= max_probes) {
+    ht_del_item(item);
+    ht_resize_up(table);
+    ht_insert(table, key, value);
+    return;
   }
 
   table->items[index] = item;
@@ -226,10 +239,10 @@ void ht_insert(ht *table, const char *key, const void *value) {
 }
 
 void *ht_search(ht *table, const char *key) {
-  int index = ht_get_hash(key, table->capacity, 0);
+  size_t index = ht_get_hash(key, table->capacity, 0);
   ht_item *item = table->items[index];
 
-  int i = 1;
+  size_t i = 1;
   while (item != NULL) {
     if (item != &HT_DELETED_ITEM) {
       if (strcmp(item->key, key) == 0) {
@@ -245,10 +258,10 @@ void *ht_search(ht *table, const char *key) {
 }
 
 void ht_delete(ht *table, const char *key) {
-  int index = ht_get_hash(key, table->capacity, 0);
+  size_t index = ht_get_hash(key, table->capacity, 0);
   ht_item *item = table->items[index];
 
-  int i = 1;
+  size_t i = 1;
   while (item != NULL) {
     if (item != &HT_DELETED_ITEM) {
       if (strcmp(item->key, key) == 0) {
@@ -256,7 +269,7 @@ void ht_delete(ht *table, const char *key) {
         table->items[index] = &HT_DELETED_ITEM;
         table->count--;
 
-        const int load = table->count * 100 / table->capacity;
+        const size_t load = table->count * 100 / table->capacity;
         if (load < 10)
           ht_resize_down(table);
 
