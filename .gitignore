@@ -1,13 +1,20 @@
-.cache/
+*
 
-obj/
-bin/
+!/includes/
+!/includes/**
+!/src/
+!/src/**
+!/lib/
+!/lib/**
+!/tests/
+!/tests/**
+!/examples/
+!/examples/
+!*.scl
 
-examples/*
-!examples/*.scl
+!Makefile
+!.clang-format
+!README.md
+!LICENSE
 
-compile_commands.json
-
-test*
-
-TODO
+!.gitignore
