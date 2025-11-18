@@ -1,4 +1,4 @@
-# Simple Compiler
+# Scull
 
 A C and Go like systems level programming language. Final name yet to be decided.
 Compiles to x86-64 fasm assembly.
