@@ -5,10 +5,10 @@
 
 ## Compiler Related
 
-- NEC Test cases
-
-- NEC Arenas instead of the current allocation method
+- [ ] NEC Arenas / Allocators instead of the current allocation method
+  - https://arjunsreedharan.org/post/148675821737/memory-allocators-101-write-a-simple-memory
+- [ ] NEC Test cases
 
 ## Language Related
 
-- NEC make functions and arrays better, fix general bugs and finnickiness
+- [ ] NEC make functions and arrays better, fix general bugs and finnickiness
