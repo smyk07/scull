@@ -5,6 +5,18 @@
 #ifndef FASM_UTILS
 #define FASM_UTILS
 
+#include <stdio.h>
+
+static FILE *fasm_output = NULL;
+
+void init_fasm_output(const char *filename);
+
+void emit(const char *format, ...);
+
+void emit_without_indent(const char *format, ...);
+
+void close_fasm_output();
+
 /*
  * @brief: helper function to assemble the generated fasm assembly '.s' file to
  * an output object file.

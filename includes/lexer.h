@@ -38,7 +38,7 @@ typedef struct lexer {
  * @param errors: error counter to increment whenever an errror is encountered.
  */
 void lexer_tokenize(const char *buffer, size_t buffer_len,
-                    dynamic_array *tokens, char *include_dir,
+                    dynamic_array *tokens, const char *include_dir,
                     unsigned int *errors);
 
 /*

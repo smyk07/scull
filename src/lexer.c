@@ -535,7 +535,7 @@ static token lexer_next_token(lexer *l) {
 }
 
 void lexer_tokenize(const char *buffer, size_t buffer_len,
-                    dynamic_array *tokens, char *include_dir,
+                    dynamic_array *tokens, const char *include_dir,
                     unsigned int *errors) {
   lexer lexer;
   lexer_init(&lexer, buffer, buffer_len);

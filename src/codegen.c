@@ -3,6 +3,7 @@
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
 #include "ds/stack.h"
+#include "fasm_utils.h"
 #include "utils.h"
 
 #include <stddef.h>
@@ -161,31 +162,31 @@ static void term_asm(term_node *term, ht *variables, program_node *program,
                      unsigned int *errors) {
   switch (term->kind) {
   case TERM_INT:
-    printf("    mov rax, %d\n", term->value.integer);
+    emit("mov rax, %d\n", term->value.integer);
     break;
   case TERM_CHAR: {
-    printf("    mov rax, %d\n", term->value.character);
+    emit("mov rax, %d\n", term->value.character);
     break;
   }
   case TERM_IDENTIFIER: {
     int index = get_var_stack_offset(variables, &term->identifier, NULL);
     if (term->identifier.is_array)
-      printf("    lea rax, [rbp - %d]\n", index * 8 + 8);
+      emit("lea rax, [rbp - %d]\n", index * 8 + 8);
     else
-      printf("    mov rax, qword [rbp - %d]\n", index * 8 + 8);
+      emit("mov rax, qword [rbp - %d]\n", index * 8 + 8);
     break;
   }
   case TERM_POINTER:
     break;
   case TERM_DEREF: {
     int index = get_var_stack_offset(variables, &term->identifier, NULL);
-    printf("    mov rbx, qword [rbp - %d]\n", index * 8 + 8);
-    printf("    mov rax, qword [rbx]\n");
+    emit("mov rbx, qword [rbp - %d]\n", index * 8 + 8);
+    emit("mov rax, qword [rbx]\n");
     break;
   }
   case TERM_ADDOF: {
     int index = get_var_stack_offset(variables, &term->identifier, NULL);
-    printf("    lea rax, [rbp - %d]\n", index * 8 + 8);
+    emit("lea rax, [rbp - %d]\n", index * 8 + 8);
     break;
   }
 
@@ -193,9 +194,9 @@ static void term_asm(term_node *term, ht *variables, program_node *program,
     size_t array_base = get_array_base_offset(
         program, &term->array_access.array_var, variables, errors);
     expr_asm(term->array_access.index_expr, variables, program, errors);
-    printf("    cdqe\n");
-    printf("    lea rdx, [rbp - %zu]\n", array_base);
-    printf("    mov eax, dword [rdx + rax*4]\n");
+    emit("cdqe\n");
+    emit("lea rdx, [rbp - %zu]\n", array_base);
+    emit("mov eax, dword [rdx + rax*4]\n");
     break;
   }
 
@@ -226,37 +227,37 @@ static void expr_asm(expr_node *expr, ht *variables, program_node *program,
     break;
   case EXPR_ADD:
     expr_asm(expr->binary.left, variables, program, errors);
-    printf("    push rax\n");
+    emit("push rax\n");
     expr_asm(expr->binary.right, variables, program, errors);
-    printf("    pop rdx\n");
-    printf("    add rax, rdx\n");
+    emit("pop rdx\n");
+    emit("add rax, rdx\n");
     break;
   case EXPR_SUBTRACT:
     expr_asm(expr->binary.left, variables, program, errors);
-    printf("    push rax\n");
+    emit("push rax\n");
     expr_asm(expr->binary.right, variables, program, errors);
-    printf("    mov rdx, rax\n");
-    printf("    pop rax\n");
-    printf("    sub rax, rdx\n");
+    emit("mov rdx, rax\n");
+    emit("pop rax\n");
+    emit("sub rax, rdx\n");
     break;
   case EXPR_MULTIPLY:
     expr_asm(expr->binary.left, variables, program, errors);
-    printf("    push rax\n");
+    emit("push rax\n");
     expr_asm(expr->binary.right, variables, program, errors);
-    printf("    pop rdx\n");
-    printf("    imul rax, rdx\n");
+    emit("pop rdx\n");
+    emit("imul rax, rdx\n");
     break;
   case EXPR_DIVIDE:
   case EXPR_MODULO:
     expr_asm(expr->binary.left, variables, program, errors);
-    printf("    push rax\n");
+    emit("push rax\n");
     expr_asm(expr->binary.right, variables, program, errors);
-    printf("    mov rcx, rax\n");
-    printf("    pop rax\n");
-    printf("    cqo\n");
-    printf("    idiv rcx\n");
+    emit("mov rcx, rax\n");
+    emit("pop rax\n");
+    emit("cqo\n");
+    emit("idiv rcx\n");
     if (expr->kind == EXPR_MODULO) {
-      printf("    mov rax, rdx\n");
+      emit("mov rax, rdx\n");
     }
     break;
   }
@@ -272,33 +273,33 @@ static void expr_asm(expr_node *expr, ht *variables, program_node *program,
 static void rel_asm(rel_node *rel, ht *variables, program_node *program,
                     unsigned int *errors) {
   term_asm(&rel->comparison.lhs, variables, program, errors);
-  printf("    push rax\n");
+  emit("push rax\n");
   term_asm(&rel->comparison.rhs, variables, program, errors);
-  printf("    pop rdx\n");
-  printf("    cmp rdx, rax\n");
+  emit("pop rdx\n");
+  emit("cmp rdx, rax\n");
 
   switch (rel->kind) {
   case REL_IS_EQUAL:
-    printf("    sete al\n");
+    emit("sete al\n");
     break;
   case REL_NOT_EQUAL:
-    printf("    setne al\n");
+    emit("setne al\n");
     break;
   case REL_LESS_THAN:
-    printf("    setl al\n");
+    emit("setl al\n");
     break;
   case REL_LESS_THAN_OR_EQUAL:
-    printf("    setle al\n");
+    emit("setle al\n");
     break;
   case REL_GREATER_THAN:
-    printf("    setg al\n");
+    emit("setg al\n");
     break;
   case REL_GREATER_THAN_OR_EQUAL:
-    printf("    setge al\n");
+    emit("setge al\n");
     break;
   }
 
-  printf("    movzx rax, al\n");
+  emit("movzx rax, al\n");
 }
 
 /*
@@ -349,14 +350,14 @@ static void return_asm(return_node *ret, ht *variables, program_node *program,
     dynamic_array_get(&ret->returnvals, 0, &ret_expr);
     expr_asm(&ret_expr, variables, program, errors);
   } else {
-    printf("    xor rax, rax\n");
+    emit("xor rax, rax\n");
   }
 
   if (stack_size > 0) {
-    printf("    add rsp, %zu\n", stack_size);
+    emit("add rsp, %zu\n", stack_size);
   }
-  printf("    pop rbp\n");
-  printf("    ret\n");
+  emit("pop rbp\n");
+  emit("ret\n");
 }
 
 /*
@@ -370,16 +371,16 @@ static void function_asm(fn_node *fn, ht *functions, unsigned int *errors) {
   if (fn->kind != FN_DEFINED)
     return;
 
-  printf("\npublic %s\n"
-         "%s:\n",
-         fn->name, fn->name);
+  emit_without_indent("\npublic %s\n"
+                      "%s:\n",
+                      fn->name, fn->name);
 
-  printf("    push rbp\n");
-  printf("    mov rbp, rsp\n");
+  emit("push rbp\n");
+  emit("mov rbp, rsp\n");
 
   size_t stack_size = calculate_function_stack_size(fn, errors);
   if (stack_size > 0) {
-    printf("    sub rsp, %zu\n", stack_size);
+    emit("sub rsp, %zu\n", stack_size);
   }
 
   const char *arg_regs[] = {"rdi", "rsi", "rdx", "rcx", "r8", "r9"};
@@ -387,7 +388,7 @@ static void function_asm(fn_node *fn, ht *functions, unsigned int *errors) {
   for (size_t i = 0; i < fn->parameters.count && i < 6; i++) {
     variable param;
     dynamic_array_get(&fn->parameters, i, &param);
-    printf("    mov qword [rbp - %zu], %s\n", (i + 1) * 8, arg_regs[i]);
+    emit("mov qword [rbp - %zu], %s\n", (i + 1) * 8, arg_regs[i]);
   }
 
   unsigned int if_count = 0;
@@ -412,10 +413,10 @@ static void function_asm(fn_node *fn, ht *functions, unsigned int *errors) {
   }
 
   if (!has_return) {
-    printf("    xor rax, rax\n");
-    printf("    add rsp, %zu\n", stack_size);
-    printf("    pop rbp\n");
-    printf("    ret\n");
+    emit("xor rax, rax\n");
+    emit("add rsp, %zu\n", stack_size);
+    emit("pop rbp\n");
+    emit("ret\n");
   }
 
   stack_free(&loops);
@@ -443,7 +444,7 @@ static void fn_call_asm(fn_call_node *fn_call, ht *variables,
       expr_node arg;
       dynamic_array_get(&fn_call->parameters, i, &arg);
       expr_asm(&arg, variables, program, errors);
-      printf("    push rax\n");
+      emit("push rax\n");
     }
   }
 
@@ -451,7 +452,7 @@ static void fn_call_asm(fn_call_node *fn_call, ht *variables,
   int needs_padding = 0;
   if ((total_pushed + 8) % 16 != 0) {
     needs_padding = 1;
-    printf("    sub rsp, 8\n");
+    emit("sub rsp, 8\n");
   }
 
   if (fn_call->parameters.count > 1 && fn_call->parameters.count <= 6) {
@@ -459,35 +460,35 @@ static void fn_call_asm(fn_call_node *fn_call, ht *variables,
       expr_node arg;
       dynamic_array_get(&fn_call->parameters, i, &arg);
       expr_asm(&arg, variables, program, errors);
-      printf("    push rax\n");
+      emit("push rax\n");
     }
     for (int i = fn_call->parameters.count - 1; i >= 0; i--) {
-      printf("    pop %s\n", arg_regs[i]);
+      emit("pop %s\n", arg_regs[i]);
     }
   } else if (fn_call->parameters.count == 1) {
     expr_node arg;
     dynamic_array_get(&fn_call->parameters, 0, &arg);
     expr_asm(&arg, variables, program, errors);
-    printf("    mov %s, rax\n", arg_regs[0]);
+    emit("mov %s, rax\n", arg_regs[0]);
   } else if (fn_call->parameters.count > 6) {
     for (size_t i = 0; i < 6; i++) {
       expr_node arg;
       dynamic_array_get(&fn_call->parameters, i, &arg);
       expr_asm(&arg, variables, program, errors);
-      printf("    push rax\n");
+      emit("push rax\n");
     }
     for (int i = 5; i >= 0; i--) {
-      printf("    pop %s\n", arg_regs[i]);
+      emit("pop %s\n", arg_regs[i]);
     }
   }
 
-  printf("    call %s\n", fn_call->name);
+  emit("call %s\n", fn_call->name);
 
   if (needs_padding) {
-    printf("    add rsp, 8\n");
+    emit("add rsp, 8\n");
   }
   if (stack_arg_count > 0) {
-    printf("    add rsp, %zu\n", stack_arg_count * 8);
+    emit("add rsp, %zu\n", stack_arg_count * 8);
   }
 }
 
@@ -510,7 +511,7 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
     int index =
         get_var_stack_offset(variables, &instr->initialize_variable.var, NULL);
     expr_asm(&instr->initialize_variable.expr, variables, program, errors);
-    printf("    mov qword [rbp - %d], rax\n", index * 8 + 8);
+    emit("mov qword [rbp - %d], rax\n", index * 8 + 8);
     break;
   }
 
@@ -519,10 +520,10 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
         get_var_stack_offset(variables, &instr->assign.identifier, NULL);
     expr_asm(&instr->assign.expr, variables, program, errors);
     if (instr->assign.identifier.type == TYPE_POINTER) {
-      printf("    mov rbx, qword [rbp - %d]\n", index * 8 + 8);
-      printf("    mov qword [rbx], rax\n");
+      emit("mov rbx, qword [rbp - %d]\n", index * 8 + 8);
+      emit("mov qword [rbx], rax\n");
     } else {
-      printf("    mov qword [rbp - %d], rax\n", index * 8 + 8);
+      emit("mov qword [rbp - %d], rax\n", index * 8 + 8);
     }
     break;
   }
@@ -532,13 +533,13 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
         program, &instr->assign_to_array_subscript.var, variables, errors);
     expr_asm(&instr->assign_to_array_subscript.expr_to_assign, variables,
              program, errors);
-    printf("    push rax\n");
+    emit("push rax\n");
     expr_asm(instr->assign_to_array_subscript.index_expr, variables, program,
              errors);
-    printf("    mov rcx, rax\n");
-    printf("    lea rdx, [rbp - %zu]\n", array_base);
-    printf("    pop rax\n");
-    printf("    mov dword [rdx + rcx * 4], eax\n");
+    emit("mov rcx, rax\n");
+    emit("lea rdx, [rbp - %zu]\n", array_base);
+    emit("pop rax\n");
+    emit("mov dword [rdx + rcx * 4], eax\n");
     break;
 
   case INSTR_DECLARE_ARRAY: {
@@ -548,7 +549,7 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
   case INSTR_INITIALIZE_ARRAY: {
     size_t array_base = get_array_base_offset(
         program, &instr->initialize_array.var, variables, errors);
-    printf("    lea rdx, [rbp - %zu]\n", array_base);
+    emit("lea rdx, [rbp - %zu]\n", array_base);
 
     for (size_t i = 0; i < instr->initialize_array.literal.elements.count;
          i++) {
@@ -556,7 +557,7 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
       dynamic_array_get(&instr->initialize_array.literal.elements, i, &elem);
 
       expr_asm(&elem, variables, program, errors);
-      printf("    mov dword [rdx + %zu], eax\n", i * 4);
+      emit("mov dword [rdx + %zu], eax\n", i * 4);
     }
     break;
   }
@@ -564,8 +565,8 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
   case INSTR_IF: {
     rel_asm(&instr->if_.rel, variables, program, errors);
     int label = (*if_count)++;
-    printf("    test rax, rax\n");
-    printf("    jz .endif%d\n", label);
+    emit("test rax, rax\n");
+    emit("jz .endif%d\n", label);
     switch (instr->if_.kind) {
     case IF_SINGLE_INSTR:
       instr_asm(instr->if_.instr, variables, if_count, loops, functions,
@@ -581,16 +582,16 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
       }
       break;
     }
-    printf("    .endif%d:\n", label);
+    emit(".endif%d:\n", label);
     break;
   }
 
   case INSTR_GOTO:
-    printf("    jmp .%s\n", instr->goto_.label);
+    emit("jmp .%s\n", instr->goto_.label);
     break;
 
   case INSTR_LABEL:
-    printf(".%s:\n", instr->label.label);
+    emit_without_indent(".%s:\n", instr->label.label);
     break;
 
   case INSTR_FASM:
@@ -598,10 +599,10 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
       int index = get_var_stack_offset(variables, &instr->fasm.argument, NULL);
       char *stmt =
           scu_format_string((char *)instr->fasm.content, index * 8 + 8);
-      printf("    %s\n", stmt);
+      emit("%s\n", stmt);
       free(stmt);
     } else {
-      printf("    %s\n", instr->fasm.content);
+      emit("%s\n", instr->fasm.content);
     }
     break;
 
@@ -614,33 +615,33 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
 
     switch (instr->loop.kind) {
     case LOOP_UNCONDITIONAL:
-      printf(".loop_%zu_start:\n", instr->loop.loop_id);
+      emit_without_indent(".loop_%zu_start:\n", instr->loop.loop_id);
       for (unsigned int i = 0; i < instr->loop.instrs.count; i++) {
         struct instr_node _instr;
         dynamic_array_get(&instr->loop.instrs, i, &_instr);
         instr_asm(&_instr, variables, if_count, loops, functions, program,
                   errors);
       }
-      printf(".loop_%zu_end:\n", instr->loop.loop_id);
+      emit_without_indent(".loop_%zu_end:\n", instr->loop.loop_id);
       break;
 
     case LOOP_WHILE:
-      printf("    jmp .loop_%zu_test\n", instr->loop.loop_id);
+      emit("jmp .loop_%zu_test\n", instr->loop.loop_id);
 
     case LOOP_DO_WHILE:
-      printf(".loop_%zu_start:\n", instr->loop.loop_id);
+      emit_without_indent(".loop_%zu_start:\n", instr->loop.loop_id);
       for (unsigned int i = 0; i < instr->loop.instrs.count; i++) {
         struct instr_node _instr;
         dynamic_array_get(&instr->loop.instrs, i, &_instr);
         instr_asm(&_instr, variables, if_count, loops, functions, program,
                   errors);
       }
-      printf(".loop_%zu_test:\n", instr->loop.loop_id);
+      emit_without_indent(".loop_%zu_test:\n", instr->loop.loop_id);
       rel_asm(&instr->loop.break_condition, variables, program, errors);
-      printf("    test rax, rax\n");
-      printf("    jz .loop_%zu_end\n", instr->loop.loop_id);
-      printf("    jmp .loop_%zu_start\n", instr->loop.loop_id);
-      printf(".loop_%zu_end:\n", instr->loop.loop_id);
+      emit("test rax, rax\n");
+      emit("jz .loop_%zu_end\n", instr->loop.loop_id);
+      emit("jmp .loop_%zu_start\n", instr->loop.loop_id);
+      emit_without_indent(".loop_%zu_end:\n", instr->loop.loop_id);
       break;
     }
 
@@ -650,7 +651,7 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
 
   case INSTR_LOOP_BREAK: {
     loop_node *_loop = stack_top(loops);
-    printf("    jmp .loop_%zu_end\n", _loop->loop_id);
+    emit("jmp .loop_%zu_end\n", _loop->loop_id);
     break;
   }
 
@@ -658,11 +659,11 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
     loop_node *_loop = stack_top(loops);
     switch (_loop->kind) {
     case LOOP_UNCONDITIONAL:
-      printf("    jmp .loop_%zu_start\n", _loop->loop_id);
+      emit("jmp .loop_%zu_start\n", _loop->loop_id);
       break;
     case LOOP_WHILE:
     case LOOP_DO_WHILE:
-      printf("    jmp .loop_%zu_test\n", _loop->loop_id);
+      emit("jmp .loop_%zu_test\n", _loop->loop_id);
       break;
     }
     break;
@@ -677,7 +678,7 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
       dynamic_array_get(&instr->ret_node.returnvals, 0, &ret_expr);
       expr_asm(&ret_expr, variables, program, errors);
     } else {
-      printf("    xor rax, rax\n");
+      emit("xor rax, rax\n");
     }
     break;
 
@@ -712,7 +713,7 @@ void instrs_to_asm(program_node *program, ht *variables, stack *loops,
   unsigned int if_count = 0;
 
   char *output_asm_file = scu_format_string("%s.s", filename);
-  freopen(output_asm_file, "w", stdout);
+  init_fasm_output(output_asm_file);
 
   int has_main = 0;
   fn_node *main_fn = ht_search(functions, "main");
@@ -720,30 +721,30 @@ void instrs_to_asm(program_node *program, ht *variables, stack *loops,
     has_main = 1;
   }
 
-  printf("format ELF64\n");
+  emit_without_indent("format ELF64\n");
 
   if (has_main) {
-    printf("LINE_MAX equ 1024\n");
-    printf("public _start\n");
+    emit_without_indent("LINE_MAX equ 1024\n");
+    emit_without_indent("public _start\n");
   }
 
   for (unsigned int i = 0; i < program->instrs.count; i++) {
     struct instr_node instr;
     dynamic_array_get(&program->instrs, i, &instr);
     if (instr.kind == INSTR_FN_DECLARE) {
-      printf("\nextrn %s\n", instr.fn_declare_node.name);
+      emit_without_indent("\nextrn %s\n", instr.fn_declare_node.name);
     }
   }
-  printf("\n");
+  emit_without_indent("\n");
 
-  printf("section '.text' executable\n");
+  emit_without_indent("section '.text' executable\n");
 
   for (unsigned int i = 0; i < program->instrs.count; i++) {
     struct instr_node instr;
     dynamic_array_get(&program->instrs, i, &instr);
 
     if (instr.kind == INSTR_FASM_DEFINE) {
-      printf("%s\n", instr.fasm_def.content);
+      emit_without_indent("%s\n", instr.fasm_def.content);
       dynamic_array_remove(&program->instrs, i);
       i--;
     }
@@ -771,13 +772,13 @@ void instrs_to_asm(program_node *program, ht *variables, stack *loops,
   }
 
   if (has_global_code) {
-    printf("\n__global:\n");
-    printf("    push rbp\n");
-    printf("    mov rbp, rsp\n");
+    emit_without_indent("\n__global:\n");
+    emit("push rbp\n");
+    emit("mov rbp, rsp\n");
 
     size_t stack_size = calculate_total_stack_size(variables, program, errors);
     if (stack_size > 0) {
-      printf("    sub rsp, %zu\n", stack_size);
+      emit("sub rsp, %zu\n", stack_size);
     }
 
     for (unsigned int i = 0; i < program->instrs.count; i++) {
@@ -794,34 +795,29 @@ void instrs_to_asm(program_node *program, ht *variables, stack *loops,
     }
 
     if (stack_size > 0) {
-      printf("    add rsp, %zu\n", stack_size);
+      emit("add rsp, %zu\n", stack_size);
     }
-    printf("    pop rbp\n");
-    printf("    ret\n");
+    emit("pop rbp\n");
+    emit("ret\n");
   }
 
   if (has_main) {
-    printf("\n_start:\n");
+    emit_without_indent("\n_start:\n");
     if (has_global_code) {
-      printf("    call __global\n");
+      emit("call __global\n");
     }
-    printf("    call main\n");
-    printf("    mov rdi, rax\n");
-    printf("    mov rax, 60\n");
-    printf("    syscall\n\n");
+    emit("call main\n");
+    emit("mov rdi, rax\n");
+    emit("mov rax, 60\n");
+    emit("syscall\n\n");
   }
 
   if (has_main) {
-    printf("section '.data' writeable\n");
-    printf("line rb LINE_MAX\n");
-    printf("newline db 10, 0\n");
-    printf("char_buf db 0, 0\n");
+    emit_without_indent("section '.data' writeable\n");
+    emit_without_indent("line rb LINE_MAX\n");
+    emit_without_indent("newline db 10, 0\n");
+    emit_without_indent("char_buf db 0, 0\n");
   }
 
-  fflush(stdout);
-  fclose(stdout);
-
-  free(output_asm_file);
-
-  stdout = fopen("/dev/tty", "w");
+  close_fasm_output();
 }

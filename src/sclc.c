@@ -6,7 +6,7 @@
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
+ * the free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
  * This program is distributed in the hope that it will be useful,
@@ -49,7 +49,7 @@ int main(int argc, char *argv[]) {
     lexer_tokenize(fst->code_buffer, fst->code_buffer_len, fst->tokens,
                    state->include_dir, &fst->error_count);
 
-    // Lexing test function
+    // Lexing debug statements
     if (state->options.verbose) {
       scu_pdebug("Lexing Debug Statements for %s:\n", fst->filepath);
       lexer_print_tokens(fst->tokens);
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     parser_init(fst->tokens, fst->parser);
     parser_parse_program(fst->parser, fst->program, &fst->error_count);
 
-    // Parsing test function
+    // Parsing debug statements
     if (state->options.verbose) {
       scu_pdebug("Parsing Debug Statements for %s:\n", fst->filepath);
       parser_print_program(fst->program);
@@ -84,7 +84,8 @@ int main(int argc, char *argv[]) {
     fasm_assemble(fst->extracted_filepath,
                   scu_format_string("%s.s", fst->extracted_filepath));
 
-    scu_psuccess("COMPILED %s\n", fst->filepath);
+    if (state->options.verbose)
+      scu_psuccess("COMPILED %s\n", fst->filepath);
   }
 
   size_t total_len = 0;
@@ -113,8 +114,9 @@ int main(int argc, char *argv[]) {
   end = clock();
   time_taken = (double)(end - start) / CLOCKS_PER_SEC;
 
-  scu_psuccess("  LINKED %s - %.2fs total time taken\n", state->output_filepath,
-               time_taken);
+  if (state->options.verbose)
+    scu_psuccess("  LINKED %s - %.2fs total time taken\n",
+                 state->output_filepath, time_taken);
 
   cstate_free(state);
 
