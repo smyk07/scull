@@ -46,13 +46,18 @@ $(OBJ_DIR):
 $(BIN_DIR):
 	@mkdir -p $(BIN_DIR)
 
+clean-sclc:
+	@echo -e "$(GREEN)[CLEAN]$(NC) Removing $(OBJ_DIR) $(BIN_DIR)"
+	@rm -frf $(OBJ_DIR) $(BIN_DIR)
+
 compile_commands.json:
 	@echo -e "$(GREEN)[BEAR]$(NC) Generating compile_commands.json"
 	@bear -- $(MAKE) clean-sclc sclc
 
-clean-sclc:
-	@echo -e "$(GREEN)[CLEAN]$(NC) Removing $(OBJ_DIR) $(BIN_DIR)"
-	@rm -frf $(OBJ_DIR) $(BIN_DIR)
+clean-compile_commands.json:
+	@echo -e "$(GREEN)[CLEAN]$(NC) Removing compile_commands.json"
+	@rm compile_commands.json
+
 
 ####################
 # Examples for scl #
@@ -64,20 +69,19 @@ EXAMPLES_DIR = ./examples
 EXAMPLE_SRCS = $(shell find $(EXAMPLES_DIR) -name "*.scl" -type f)
 EXAMPLE_BINARIES = $(EXAMPLE_SRCS:.scl=)
 
-examples: sclc | $(EXAMPLE_BINARIES)
+examples: sclc $(EXAMPLE_BINARIES)
 	@echo -e "$(GREEN)[INFO]$(NC) Examples Compiled Successfully"
 
 $(EXAMPLES_DIR)/%: $(EXAMPLES_DIR)/%.scl $(TARGET)
+	@echo -e "$(GREEN)[SCLC]$(NC) $<"
 	@$(SCLC) $(SCLC_FLAGS) $<
 
 clean-examples:
 	@echo -e "$(GREEN)[CLEAN]$(NC) Removing $(EXAMPLE_BINARIES)"
 	@find ./examples -type f ! -name "*.scl" -delete
 
-clean-all: clean-sclc clean-examples
-	@echo -e "$(GREEN)[CLEAN]$(NC) Removing compile_commands.json"
-	@rm compile_commands.json
+clean-all: clean-sclc clean-examples clean-compile_commands.json
 
 -include $(DEPS)
 
-.PHONY: all sclc clean-sclc clean-all compile_commands.json install examples clean-examples
+.PHONY: all sclc clean-sclc clean-all compile_commands.json clean-compile_commands.json install examples clean-examples
