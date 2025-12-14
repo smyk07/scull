@@ -11,7 +11,9 @@
 #ifndef CSTATE_H
 #define CSTATE_H
 
+#include "backend/backend.h"
 #include "ds/dynamic_array.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -55,6 +57,8 @@ typedef struct cstate {
    * Ex: main.sclc => main
    */
   char *output_filepath;
+
+  target_kind target;
 
   /*
    * Options for the compilation process.

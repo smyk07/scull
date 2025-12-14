@@ -6,9 +6,21 @@
 #ifndef SEMANTIC
 #define SEMANTIC
 
+#include "ast.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
+
 #include <stddef.h>
+
+/*
+ * @brief: evaluate a constant expression to extract integer value
+ *
+ * @param expr: pointer to an expr_node
+ * @param errors: counter variable to increment when an error is encountered.
+ *
+ * @return: the integer value of the constant expression
+ */
+int evaluate_const_expr(expr_node *expr, unsigned int *errors);
 
 /*
  * @brief: go through all the variables and labels in the parse tree and check

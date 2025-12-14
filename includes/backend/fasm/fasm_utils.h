@@ -2,8 +2,8 @@
  * fasm_utils: contains functions for the fasm assembler.
  */
 
-#ifndef FASM_UTILS
-#define FASM_UTILS
+#ifndef FASM_UTILS_H
+#define FASM_UTILS_H
 
 #include <stdio.h>
 
@@ -26,4 +26,4 @@ void close_fasm_output();
  */
 void fasm_assemble(const char *output_file, const char *asm_file);
 
-#endif // !FASM_UTILS
+#endif // !FASM_UTILS_H

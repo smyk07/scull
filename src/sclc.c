@@ -18,12 +18,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "codegen.h"
+#include "backend/backend.h"
+#include "backend/ld_utils.h"
 #include "cstate.h"
 #include "ds/dynamic_array.h"
-#include "fasm_utils.h"
 #include "fstate.h"
-#include "ld_utils.h"
 #include "lexer.h"
 #include "semantic.h"
 #include "utils.h"
@@ -35,22 +34,24 @@
 
 int main(int argc, char *argv[]) {
   // Initialize compiler state
-  cstate *state = cstate_create_from_args(argc, argv);
+  cstate *cst = cstate_create_from_args(argc, argv);
+
+  backend *backend = backend_create(cst->target);
 
   clock_t start, end;
   double time_taken;
   start = clock();
 
-  for (size_t i = 0; i < state->files.count; i++) {
+  for (size_t i = 0; i < cst->files.count; i++) {
     fstate *fst;
-    dynamic_array_get(&state->files, i, &fst);
+    dynamic_array_get(&cst->files, i, &fst);
 
     // Lexing
     lexer_tokenize(fst->code_buffer, fst->code_buffer_len, fst->tokens,
-                   state->include_dir, &fst->error_count);
+                   cst->include_dir, &fst->error_count);
 
     // Lexing debug statements
-    if (state->options.verbose) {
+    if (cst->options.verbose) {
       scu_pdebug("Lexing Debug Statements for %s:\n", fst->filepath);
       lexer_print_tokens(fst->tokens);
     }
@@ -60,7 +61,7 @@ int main(int argc, char *argv[]) {
     parser_parse_program(fst->parser, fst->program, &fst->error_count);
 
     // Parsing debug statements
-    if (state->options.verbose) {
+    if (cst->options.verbose) {
       scu_pdebug("Parsing Debug Statements for %s:\n", fst->filepath);
       parser_print_program(fst->program);
     }
@@ -70,55 +71,53 @@ int main(int argc, char *argv[]) {
                     &fst->error_count);
 
     // Semantic Debug Statement
-    if (state->options.verbose)
+    if (cst->options.verbose)
       scu_pdebug("Semantic Analysis Complete for %s\n", fst->filepath);
 
-    // Codegen & Assembler
-    instrs_to_asm(fst->program, fst->variables, fst->loops, fst->functions,
-                  fst->extracted_filepath, &fst->error_count);
+    // Initiate backend compilation
+    backend_compile(backend, cst, fst);
 
-    // Codegen & Assembler Debug Statements
-    if (state->options.verbose)
-      scu_pdebug("Codegen & Assembling Complete for %s\n", fst->filepath);
+    // Codegen Debug Statements
+    if (cst->options.verbose)
+      scu_pdebug("Codegen Complete for %s\n", fst->filepath);
 
-    fasm_assemble(fst->extracted_filepath,
-                  scu_format_string("%s.s", fst->extracted_filepath));
-
-    if (state->options.verbose)
+    if (cst->options.verbose)
       scu_psuccess("COMPILED %s\n", fst->filepath);
   }
 
+  backend_destroy(backend);
+
   size_t total_len = 0;
-  for (size_t i = 0; i < state->files.count; i++) {
+  for (size_t i = 0; i < cst->files.count; i++) {
     fstate *fst;
-    dynamic_array_get(&state->files, i, &fst);
+    dynamic_array_get(&cst->files, i, &fst);
     total_len += strlen(fst->extracted_filepath) + 3;
   }
 
   char *obj_file_list = scu_checked_malloc(total_len + 1);
   obj_file_list[0] = '\0';
 
-  for (size_t i = 0; i < state->files.count; i++) {
+  for (size_t i = 0; i < cst->files.count; i++) {
     fstate *fst;
-    dynamic_array_get(&state->files, i, &fst);
+    dynamic_array_get(&cst->files, i, &fst);
     if (i > 0)
       strcat(obj_file_list, " ");
     strcat(obj_file_list, fst->extracted_filepath);
     strcat(obj_file_list, ".o");
   }
 
-  ld_link(state->output_filepath, obj_file_list);
+  ld_link(cst->output_filepath, obj_file_list);
 
   free(obj_file_list);
 
   end = clock();
   time_taken = (double)(end - start) / CLOCKS_PER_SEC;
 
-  if (state->options.verbose)
-    scu_psuccess("  LINKED %s - %.2fs total time taken\n",
-                 state->output_filepath, time_taken);
+  if (cst->options.verbose)
+    scu_psuccess("  LINKED %s - %.2fs total time taken\n", cst->output_filepath,
+                 time_taken);
 
-  cstate_free(state);
+  cstate_free(cst);
 
   return 0;
 }

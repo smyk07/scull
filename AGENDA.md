@@ -5,7 +5,11 @@
 
 ## Compiler Related
 
+- [x] NEC Seperate backend from frontend, have a clean backend interface integrate with main driver `src/sclc.c`
+
 - [ ] NEC Switch over to LLVM backend (use c bindings)
+
+- [ ] NEC Develop C Backend
 
 - [ ] NEC Arenas / Allocators instead of the current allocation method
   - https://arjunsreedharan.org/post/148675821737/memory-allocators-101-write-a-simple-memory

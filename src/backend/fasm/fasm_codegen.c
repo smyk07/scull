@@ -1,9 +1,10 @@
-#include "codegen.h"
+#include "backend/fasm/fasm_codegen.h"
 #include "ast.h"
+#include "backend/fasm/fasm_utils.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
 #include "ds/stack.h"
-#include "fasm_utils.h"
+#include "semantic.h"
 #include "utils.h"
 
 #include <stddef.h>
@@ -43,51 +44,6 @@ static void instr_asm(instr_node *instr, ht *variables, unsigned int *if_count,
  */
 static void expr_asm(expr_node *expr, ht *variables, program_node *program,
                      unsigned int *errors);
-
-int evaluate_const_expr(expr_node *expr, unsigned int *errors) {
-  if (expr == NULL) {
-    return 0;
-  }
-
-  switch (expr->kind) {
-  case EXPR_TERM:
-    if (expr->term.kind == TERM_INT) {
-      return expr->term.value.integer;
-    }
-    scu_perror(errors, "Array size must be a constant expression\n");
-    return 0;
-
-  case EXPR_ADD:
-    return evaluate_const_expr(expr->binary.left, errors) +
-           evaluate_const_expr(expr->binary.right, errors);
-
-  case EXPR_SUBTRACT:
-    return evaluate_const_expr(expr->binary.left, errors) -
-           evaluate_const_expr(expr->binary.right, errors);
-
-  case EXPR_MULTIPLY:
-    return evaluate_const_expr(expr->binary.left, errors) *
-           evaluate_const_expr(expr->binary.right, errors);
-
-  case EXPR_DIVIDE: {
-    int right = evaluate_const_expr(expr->binary.right, errors);
-    if (right == 0) {
-      scu_perror(errors, "Division by zero in array size\n");
-      return 0;
-    }
-    return evaluate_const_expr(expr->binary.left, errors) / right;
-  }
-
-  case EXPR_MODULO: {
-    int right = evaluate_const_expr(expr->binary.right, errors);
-    if (right == 0) {
-      scu_perror(errors, "Division by zero in array size\n");
-      return 0;
-    }
-    return evaluate_const_expr(expr->binary.left, errors) % right;
-  }
-  }
-}
 
 /*
  * @brief: get array size from declare_array_node
@@ -708,12 +664,9 @@ static size_t calculate_total_stack_size(ht *variables, program_node *program,
   return total;
 }
 
-void instrs_to_asm(program_node *program, ht *variables, stack *loops,
-                   ht *functions, const char *filename, unsigned int *errors) {
+void instrs_to_fasm(program_node *program, ht *variables, stack *loops,
+                    ht *functions, unsigned int *errors) {
   unsigned int if_count = 0;
-
-  char *output_asm_file = scu_format_string("%s.s", filename);
-  init_fasm_output(output_asm_file);
 
   int has_main = 0;
   fn_node *main_fn = ht_search(functions, "main");

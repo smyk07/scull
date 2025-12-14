@@ -1,6 +1,5 @@
 #include "semantic.h"
 #include "ast.h"
-#include "codegen.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
 #include "utils.h"
@@ -9,6 +8,51 @@
 
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
+
+int evaluate_const_expr(expr_node *expr, unsigned int *errors) {
+  if (expr == NULL) {
+    return 0;
+  }
+
+  switch (expr->kind) {
+  case EXPR_TERM:
+    if (expr->term.kind == TERM_INT) {
+      return expr->term.value.integer;
+    }
+    scu_perror(errors, "Array size must be a constant expression\n");
+    return 0;
+
+  case EXPR_ADD:
+    return evaluate_const_expr(expr->binary.left, errors) +
+           evaluate_const_expr(expr->binary.right, errors);
+
+  case EXPR_SUBTRACT:
+    return evaluate_const_expr(expr->binary.left, errors) -
+           evaluate_const_expr(expr->binary.right, errors);
+
+  case EXPR_MULTIPLY:
+    return evaluate_const_expr(expr->binary.left, errors) *
+           evaluate_const_expr(expr->binary.right, errors);
+
+  case EXPR_DIVIDE: {
+    int right = evaluate_const_expr(expr->binary.right, errors);
+    if (right == 0) {
+      scu_perror(errors, "Division by zero in array size\n");
+      return 0;
+    }
+    return evaluate_const_expr(expr->binary.left, errors) / right;
+  }
+
+  case EXPR_MODULO: {
+    int right = evaluate_const_expr(expr->binary.right, errors);
+    if (right == 0) {
+      scu_perror(errors, "Division by zero in array size\n");
+      return 0;
+    }
+    return evaluate_const_expr(expr->binary.left, errors) % right;
+  }
+  }
+}
 
 /*
  * @brief: convert a type enumeration to its string representation.
