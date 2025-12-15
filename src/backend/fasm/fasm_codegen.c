@@ -771,6 +771,4 @@ void instrs_to_fasm(program_node *program, ht *variables, stack *loops,
     emit_without_indent("newline db 10, 0\n");
     emit_without_indent("char_buf db 0, 0\n");
   }
-
-  close_fasm_output();
 }

@@ -14,6 +14,7 @@ void fasm_codegen_init(cstate *, fstate *fst) {
 void fasm_codegen_compile(cstate *, fstate *fst) {
   instrs_to_fasm(fst->program, fst->variables, fst->loops, fst->functions,
                  &fst->error_count);
+  close_fasm_output();
 }
 
 void fasm_codegen_assmeble(cstate *, fstate *fst) {
