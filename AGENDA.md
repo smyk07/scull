@@ -7,12 +7,13 @@
 
 - [x] NEC Seperate backend from frontend, have a clean backend interface integrate with main driver `src/sclc.c`
 
-- [ ] NEC Switch over to LLVM backend (use c bindings)
+- [x] NEC Switch over to LLVM backend (use c bindings)
+  - Targets: x86_64, ARM64, RISCV64
 
 - [ ] NEC Develop C Backend
 
 - [ ] NEC Arenas / Allocators instead of the current allocation method
-  - https://arjunsreedharan.org/post/148675821737/memory-allocators-101-write-a-simple-memory
+  - <https://arjunsreedharan.org/post/148675821737/memory-allocators-101-write-a-simple-memory>
 
 - [ ] NEC Test cases
 

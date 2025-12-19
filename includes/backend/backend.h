@@ -9,7 +9,7 @@ typedef enum target_kind {
   TARGET_FASM = 0,
 
   TARGET_LLVM_X86_64,
-  TARGET_LLVM_ARM64,
+  TARGET_LLVM_AARCH64,
   TARGET_LLVM_RISCV64,
 
   TARGET_C,
@@ -17,7 +17,7 @@ typedef enum target_kind {
 
 #define TARGET_FASM_STR "fasm"
 #define TARGET_LLVM_X86_64_STR "x86_64"
-#define TARGET_LLVM_ARM64_STR "arm64"
+#define TARGET_LLVM_AARCH64_STR "aarch64"
 #define TARGET_LLVM_RISCV64_STR "riscv64"
 #define TARGET_C_STR "c"
 

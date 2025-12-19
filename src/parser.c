@@ -1233,7 +1233,7 @@ static void check_rel_node_and_print(rel_node *rel) {
  *
  * @param instr: pointer to an instruction.
  */
-static void print_instr(instr_node *instr) {
+void print_instr(instr_node *instr) {
   printf("[line %zu] ", instr->line);
   switch (instr->kind) {
   case INSTR_DECLARE:

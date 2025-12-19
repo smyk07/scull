@@ -1,6 +1,10 @@
 #ifndef DYNAMIC_ARRAY
 #define DYNAMIC_ARRAY
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 
 typedef struct dynamic_array {
@@ -27,5 +31,9 @@ int dynamic_array_pop(dynamic_array *da, void *item);
 void dynamic_array_free(dynamic_array *da);
 
 void dynamic_array_free_items(dynamic_array *da);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // !DYNAMIC_ARRAY

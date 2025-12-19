@@ -131,8 +131,8 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
       } else if (strcmp(target_str, TARGET_LLVM_X86_64_STR) == 0) {
         cst->target = TARGET_LLVM_X86_64;
         valid_target = true;
-      } else if (strcmp(target_str, TARGET_LLVM_ARM64_STR) == 0) {
-        cst->target = TARGET_LLVM_ARM64;
+      } else if (strcmp(target_str, TARGET_LLVM_AARCH64_STR) == 0) {
+        cst->target = TARGET_LLVM_AARCH64;
         valid_target = true;
       } else if (strcmp(target_str, TARGET_LLVM_RISCV64_STR) == 0) {
         cst->target = TARGET_LLVM_RISCV64;
