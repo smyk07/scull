@@ -37,7 +37,15 @@ typedef struct coptions {
    */
   bool include_dir_specified;
 
+  /*
+   * Emit LLVM IR
+   */
   bool emit_llvm;
+
+  /*
+   * Emit target assembly
+   */
+  bool emit_asm;
 } coptions;
 
 /*

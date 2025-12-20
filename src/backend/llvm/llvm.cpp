@@ -95,6 +95,8 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
       scu_pwarning(const_cast<char *>("Could not write IR file: %s\n"),
                    ec.message().c_str());
     }
+
+    return;
   }
 
   std::string error;
@@ -129,6 +131,25 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
     scu_perror(NULL, const_cast<char *>("Could not open output file: %s\n"),
                ec.message().c_str());
     return;
+  }
+
+  if (cst->options.emit_asm) {
+    std::string asm_filename = std::string(fst->extracted_filepath) + ".s";
+    llvm::raw_fd_ostream asm_dest(asm_filename, ec, llvm::sys::fs::OF_None);
+    if (ec) {
+      scu_pwarning(const_cast<char *>("Could not open asm file: %s\n"),
+                   ec.message().c_str());
+    } else {
+      llvm::legacy::PassManager asm_pass;
+      if (bctx.target_machine->addPassesToEmitFile(
+              asm_pass, asm_dest, nullptr,
+              llvm::CodeGenFileType::AssemblyFile)) {
+        scu_pwarning(const_cast<char *>("TargetMachine can't emit assembly\n"));
+      } else {
+        asm_pass.run(*bctx.module);
+        asm_dest.flush();
+      }
+    }
   }
 
   llvm::legacy::PassManager pass;

@@ -31,9 +31,13 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
     printf("--include_dir <path_to_dir>   OR  -i  Specify include directory "
            "path.\n");
 
-    printf("--verbose                     OR  -v  Print debug messages\n");
+    printf("--verbose                     OR  -v  Print debug messages.\n");
 
-    printf("--emit-llvm                           Emit LLVM IR\n");
+    printf("--emit-llvm                           Emit LLVM IR along with "
+           "object file.\n");
+
+    printf("--emit-asm                            Emit target assembly along "
+           "with object file.\n");
 
     printf("\n");
 
@@ -152,6 +156,12 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
     if (strcmp(arg, "--emit-llvm") == 0) {
       cst->options.emit_llvm = true;
+      i++;
+      continue;
+    }
+
+    if (strcmp(arg, "--emit-asm") == 0) {
+      cst->options.emit_asm = true;
       i++;
       continue;
     }
