@@ -12,8 +12,9 @@
 
 - [x] NEC Handle LLVM target selection in cstate, rather than in backend.c or llvm.c
 
-- [ ] NEC -S cli flag and --emit-llvm flag, and general CLI improvements
-  - only emit the output file in current directory unless specified, else use `/tmp`
+- [x] NEC -S cli flag and --emit-llvm flag, and general CLI improvements
+
+- [ ] NEC only emit the output file in current directory unless specified, else use `/tmp`
 
 - [ ] NEC Develop C Backend
 
@@ -32,7 +33,7 @@
 
 - [ ] NEC Parser bug fixes and proper memory management
 
-- [ ] NEC Strings
+- [x] NEC Strings
 
 - [ ] NEC io.scl refresh using functions
 
