@@ -1,7 +1,6 @@
 # Scull
 
 A C and Go like systems level programming language. Final name yet to be decided.
-Compiles to x86-64 fasm assembly.
 Only linux systems are supported for now.
 
 ## Inspiration
@@ -12,13 +11,13 @@ Only linux systems are supported for now.
 
 ## Prerequisites for building
 
+- [`llvm`](https://llvm.org/)
 - [`make`](https://www.gnu.org/software/make)
 - [`clang`](https://clang.llvm.org)
 - [`bear`](https://github.com/rizsotto/Bear) (for `compile_commands.json`)
 
 ## Tools required
 
-- [`fasm`](https://flatassembler.net)
 - [`gnu ld`](https://www.gnu.org/software/binutils)
 
 ## Usage

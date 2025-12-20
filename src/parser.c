@@ -704,61 +704,6 @@ static void parse_label(parser *p, instr_node *instr, unsigned int *errors) {
 }
 
 /*
- * @brief: parse fasm definitions.
- *
- * @param p: pointer to the parser state.
- * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
- */
-static void parse_fasm_def(parser *p, instr_node *instr, unsigned int *errors) {
-  token token;
-
-  instr->kind = INSTR_FASM_DEFINE;
-
-  parser_current(p, &token, errors);
-  instr->line = token.line;
-
-  parser_advance(p);
-  parser_current(p, &token, errors);
-  instr->fasm_def.content = token.value.str;
-
-  parser_advance(p);
-}
-
-/*
- * @brief: parse inline fasm statements.
- *
- * @param p: pointer to the parser state.
- * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
- */
-static void parse_fasm(parser *p, instr_node *instr, unsigned int *errors) {
-  token token = {0};
-
-  instr->kind = INSTR_FASM;
-
-  parser_current(p, &token, errors);
-  instr->line = token.line;
-
-  parser_advance(p);
-  parser_current(p, &token, errors);
-  instr->fasm.content = token.value.str;
-  instr->fasm.kind = FASM_NON_PAR;
-
-  parser_advance(p);
-  parser_current(p, &token, errors);
-  if (token.kind == TOKEN_COMMA) {
-    instr->fasm.kind = FASM_PAR;
-    parser_advance(p);
-    parser_current(p, &token, errors);
-    instr->fasm.argument.name = token.value.str;
-    instr->fasm.argument.line = token.line;
-
-    parser_advance(p);
-  }
-}
-
-/*
  * @brief: parse loops.
  *
  * @param p: pointer to the parser state.
@@ -1004,12 +949,6 @@ static void parse_instr(parser *p, instr_node *instr, size_t *loop_counter,
     break;
   case TOKEN_LABEL:
     parse_label(p, instr, errors);
-    break;
-  case TOKEN_FASM_DEFINE:
-    parse_fasm_def(p, instr, errors);
-    break;
-  case TOKEN_FASM:
-    parse_fasm(p, instr, errors);
     break;
   case TOKEN_LOOP:
     parse_loop(p, instr, LOOP_UNCONDITIONAL, loop_counter, errors);
@@ -1336,17 +1275,6 @@ void print_instr(instr_node *instr) {
 
   case INSTR_LABEL:
     printf("label: %s\n", instr->label.label);
-    break;
-
-  case INSTR_FASM_DEFINE:
-    printf("fasm_def: %s\n", instr->fasm_def.content);
-    break;
-
-  case INSTR_FASM:
-    printf("fasm: %s", instr->fasm.content);
-    if (instr->fasm.kind == FASM_PAR)
-      printf(", %s", instr->fasm.argument.name);
-    printf("\n");
     break;
 
   case INSTR_LOOP:

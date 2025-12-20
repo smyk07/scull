@@ -471,17 +471,6 @@ static token lexer_next_token(lexer *l) {
           .kind = TOKEN_TYPE_CHAR, .value.str = NULL, .line = l->line};
     }
 
-    else if (strcmp(value, "fasm_define") == 0) {
-      free(value);
-      return (token){
-          .kind = TOKEN_FASM_DEFINE, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "fasm") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_FASM, .value.str = NULL, .line = l->line};
-    }
-
     else if (strcmp(value, "loop") == 0) {
       free(value);
       return (token){.kind = TOKEN_LOOP, .value.str = NULL, .line = l->line};
@@ -582,10 +571,6 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "then";
   case TOKEN_LABEL:
     return "label";
-  case TOKEN_FASM_DEFINE:
-    return "fasm_define";
-  case TOKEN_FASM:
-    return "fasm";
   case TOKEN_LOOP:
     return "loop declare";
   case TOKEN_WHILE:

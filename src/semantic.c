@@ -270,16 +270,6 @@ static void instr_check_variables(instr_node *instr, ht *variables,
     instr_check_variables(instr->if_.instr, variables, functions, errors);
     break;
 
-  case INSTR_FASM:
-    if (instr->fasm.kind == FASM_PAR) {
-      variable *var = ht_search(variables, instr->fasm.argument.name);
-      if (!var) {
-        scu_perror(errors, "Use of undeclared variable: %s [line %u]\n",
-                   instr->fasm.argument.name, instr->fasm.argument.line);
-      }
-    }
-    break;
-
   case INSTR_LOOP:
     if (instr->loop.kind == LOOP_WHILE) {
       rel_check_variables(&instr->loop.break_condition, variables, functions,

@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
   // Initialize compiler state
   cstate *cst = cstate_create_from_args(argc, argv);
 
-  backend *backend = backend_create(cst->target);
+  backend *backend = backend_create();
 
   clock_t start, end;
   double time_taken;

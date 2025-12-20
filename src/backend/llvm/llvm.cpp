@@ -2,7 +2,6 @@
 
 extern "C" {
 #include "ast.h"
-#include "backend/backend.h"
 #include "backend/llvm/llvm.h"
 #include "cstate.h"
 #include "ds/dynamic_array.h"
@@ -42,20 +41,7 @@ void llvm_backend_init(cstate *cst, fstate *fst) {
 
   bctx.builder = new llvm::IRBuilder<>(*bctx.context);
 
-  switch (cst->target) {
-  case TARGET_LLVM_X86_64:
-    bctx.target_triple = "x86_64-unknown-linux-gnu";
-    break;
-  case TARGET_LLVM_AARCH64:
-    bctx.target_triple = "aarch64-unknown-linux-gnu";
-    break;
-  case TARGET_LLVM_RISCV64:
-    bctx.target_triple = "riscv64-unknown-linux-gnu";
-    break;
-  default:
-    bctx.target_triple = llvm::sys::getDefaultTargetTriple();
-    break;
-  }
+  bctx.target_triple = cst->llvm_target_triple;
 
   bctx.module->setTargetTriple(llvm::Triple(bctx.target_triple));
 

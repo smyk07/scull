@@ -853,11 +853,6 @@ void llvm_irgen_instr(llvm_backend_ctx &ctx, instr_node *instr) {
     llvm_irgen_instr_label(ctx, &instr->label);
     break;
 
-    /* DEPRECATED
-     case INSTR_FASM_DEFINE:
-     case INSTR_FASM:
-     */
-
   case INSTR_LOOP:
     llvm_irgen_instr_loop(ctx, &instr->loop);
     break;

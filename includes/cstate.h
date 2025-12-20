@@ -11,7 +11,6 @@
 #ifndef CSTATE_H
 #define CSTATE_H
 
-#include "backend/backend.h"
 #include "ds/dynamic_array.h"
 
 #include <stdbool.h>
@@ -68,7 +67,7 @@ typedef struct cstate {
    */
   char *output_filepath;
 
-  target_kind target;
+  char *llvm_target_triple;
 
   /*
    * Options for the compilation process.

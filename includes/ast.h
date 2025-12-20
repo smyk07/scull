@@ -134,8 +134,6 @@ typedef enum instr_kind {
   INSTR_IF,
   INSTR_GOTO,
   INSTR_LABEL,
-  INSTR_FASM_DEFINE,
-  INSTR_FASM,
   INSTR_LOOP,
   INSTR_LOOP_BREAK,
   INSTR_LOOP_CONTINUE,
@@ -198,18 +196,6 @@ typedef struct label_node {
   const char *label;
 } label_node;
 
-typedef struct fasm_define_node {
-  const char *content;
-} fasm_define_node;
-
-typedef enum fasm_node_kind { FASM_PAR = 0, FASM_NON_PAR } fasm_node_kind;
-
-typedef struct fasm_node {
-  fasm_node_kind kind;
-  variable argument;
-  const char *content;
-} fasm_node;
-
 typedef enum loop_kind {
   LOOP_UNCONDITIONAL = 0,
   LOOP_WHILE,
@@ -266,8 +252,6 @@ typedef struct instr_node {
     if_node if_;
     goto_node goto_;
     label_node label;
-    fasm_define_node fasm_def;
-    fasm_node fasm;
     loop_node loop;
     fn_node fn_define_node;
     fn_node fn_declare_node;

@@ -4,6 +4,9 @@
 #include "fstate.h"
 #include "utils.h"
 
+#include <llvm-c/Core.h>
+#include <llvm-c/TargetMachine.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -23,7 +26,8 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
     printf("OPTIONS:\n");
 
-    printf("--target [TARGET]             OR  -t  Specify output target.\n");
+    printf("--target [TARGET]                     Specify LLVM supported "
+           "output target triple\n");
 
     printf("--output <output_filename>    OR  -o  Specify output binary "
            "filename.\n");
@@ -41,11 +45,13 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
     printf("\n");
 
+    /*
     printf("Available Targets:\n");
     for (int i = 0; i <= TARGET_C; i++) {
       printf("%s ", target_kind_to_string((target_kind)i));
     }
     printf("\n");
+    */
 
     free(cst);
     exit(1);
@@ -57,41 +63,35 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
   cst->output_filepath = NULL;
   cst->include_dir = NULL;
   cst->error_count = 0;
-  cst->target = TARGET_FASM;
+  cst->llvm_target_triple = LLVMGetDefaultTargetTriple();
 
   while (i < argc) {
     char *arg = argv[i];
 
-    if (strcmp(arg, "--target") == 0 || strcmp(arg, "-t") == 0) {
+    if (strcmp(arg, "--target") == 0) {
       if (i + 1 >= argc) {
         scu_perror(&cst->error_count, "Missing target after %s\n", arg);
         exit(1);
       }
 
-      char *target_str = argv[i + 1];
-      bool valid_target = false;
+      const char *target_str = argv[i + 1];
+      char *err = NULL;
+      LLVMTargetRef T = NULL;
 
-      if (strcmp(target_str, TARGET_FASM_STR) == 0) {
-        cst->target = TARGET_FASM;
-        valid_target = true;
-      } else if (strcmp(target_str, TARGET_C_STR) == 0) {
-        cst->target = TARGET_C;
-        valid_target = true;
-      } else if (strcmp(target_str, TARGET_LLVM_X86_64_STR) == 0) {
-        cst->target = TARGET_LLVM_X86_64;
-        valid_target = true;
-      } else if (strcmp(target_str, TARGET_LLVM_AARCH64_STR) == 0) {
-        cst->target = TARGET_LLVM_AARCH64;
-        valid_target = true;
-      } else if (strcmp(target_str, TARGET_LLVM_RISCV64_STR) == 0) {
-        cst->target = TARGET_LLVM_RISCV64;
-        valid_target = true;
-      }
+      char *norm_triple = LLVMNormalizeTargetTriple(target_str);
 
-      if (!valid_target) {
-        scu_perror(&cst->error_count, "Invalid target: %s\n", target_str);
+      if (LLVMGetTargetFromTriple(norm_triple, &T, &err) != 0) {
+        scu_perror(&cst->error_count,
+                   "Invalid or unsupported target triple '%s': %s\n",
+                   target_str, err ? err : "unknown error");
+
+        if (err)
+          LLVMDisposeMessage(err);
+        LLVMDisposeMessage(norm_triple);
         exit(1);
       }
+
+      cst->llvm_target_triple = norm_triple;
 
       i += 2;
       continue;
