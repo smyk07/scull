@@ -36,6 +36,8 @@ typedef struct coptions {
    * Weather an include directory was specified in the command.
    */
   bool include_dir_specified;
+
+  bool emit_llvm;
 } coptions;
 
 /*

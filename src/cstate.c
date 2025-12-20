@@ -33,6 +33,8 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
     printf("--verbose                     OR  -v  Print debug messages\n");
 
+    printf("--emit-llvm                           Emit LLVM IR\n");
+
     printf("\n");
 
     printf("Available Targets:\n");
@@ -56,9 +58,38 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
   while (i < argc) {
     char *arg = argv[i];
 
-    if (strcmp(arg, "--verbose") == 0 || strcmp(arg, "-v") == 0) {
-      cst->options.verbose = true;
-      i++;
+    if (strcmp(arg, "--target") == 0 || strcmp(arg, "-t") == 0) {
+      if (i + 1 >= argc) {
+        scu_perror(&cst->error_count, "Missing target after %s\n", arg);
+        exit(1);
+      }
+
+      char *target_str = argv[i + 1];
+      bool valid_target = false;
+
+      if (strcmp(target_str, TARGET_FASM_STR) == 0) {
+        cst->target = TARGET_FASM;
+        valid_target = true;
+      } else if (strcmp(target_str, TARGET_C_STR) == 0) {
+        cst->target = TARGET_C;
+        valid_target = true;
+      } else if (strcmp(target_str, TARGET_LLVM_X86_64_STR) == 0) {
+        cst->target = TARGET_LLVM_X86_64;
+        valid_target = true;
+      } else if (strcmp(target_str, TARGET_LLVM_AARCH64_STR) == 0) {
+        cst->target = TARGET_LLVM_AARCH64;
+        valid_target = true;
+      } else if (strcmp(target_str, TARGET_LLVM_RISCV64_STR) == 0) {
+        cst->target = TARGET_LLVM_RISCV64;
+        valid_target = true;
+      }
+
+      if (!valid_target) {
+        scu_perror(&cst->error_count, "Invalid target: %s\n", target_str);
+        exit(1);
+      }
+
+      i += 2;
       continue;
     }
 
@@ -113,38 +144,15 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
       continue;
     }
 
-    if (strcmp(arg, "--target") == 0 || strcmp(arg, "-t") == 0) {
-      if (i + 1 >= argc) {
-        scu_perror(&cst->error_count, "Missing target after %s\n", arg);
-        exit(1);
-      }
+    if (strcmp(arg, "--verbose") == 0 || strcmp(arg, "-v") == 0) {
+      cst->options.verbose = true;
+      i++;
+      continue;
+    }
 
-      char *target_str = argv[i + 1];
-      bool valid_target = false;
-
-      if (strcmp(target_str, TARGET_FASM_STR) == 0) {
-        cst->target = TARGET_FASM;
-        valid_target = true;
-      } else if (strcmp(target_str, TARGET_C_STR) == 0) {
-        cst->target = TARGET_C;
-        valid_target = true;
-      } else if (strcmp(target_str, TARGET_LLVM_X86_64_STR) == 0) {
-        cst->target = TARGET_LLVM_X86_64;
-        valid_target = true;
-      } else if (strcmp(target_str, TARGET_LLVM_AARCH64_STR) == 0) {
-        cst->target = TARGET_LLVM_AARCH64;
-        valid_target = true;
-      } else if (strcmp(target_str, TARGET_LLVM_RISCV64_STR) == 0) {
-        cst->target = TARGET_LLVM_RISCV64;
-        valid_target = true;
-      }
-
-      if (!valid_target) {
-        scu_perror(&cst->error_count, "Invalid target: %s\n", target_str);
-        exit(1);
-      }
-
-      i += 2;
+    if (strcmp(arg, "--emit-llvm") == 0) {
+      cst->options.emit_llvm = true;
+      i++;
       continue;
     }
 

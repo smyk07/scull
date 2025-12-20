@@ -72,8 +72,9 @@ void llvm_backend_compile(cstate *, fstate *fst) {
   llvm_irgen_clear_symbol_table();
 }
 
-void llvm_backend_emit(cstate *, fstate *fst) {
+void llvm_backend_emit(cstate *cst, fstate *fst) {
   std::string error_str;
+  std::error_code ec;
   llvm::raw_string_ostream error_stream(error_str);
 
   if (llvm::verifyModule(*bctx.module, &error_stream)) {
@@ -83,17 +84,17 @@ void llvm_backend_emit(cstate *, fstate *fst) {
     return;
   }
 
-  // TEMPORARY: print IR to .ll file
-  std::string ir_filename = std::string(fst->extracted_filepath) + ".ll";
-  std::error_code ec;
-  llvm::raw_fd_ostream ir_file(ir_filename, ec, llvm::sys::fs::OF_None);
+  if (cst->options.emit_llvm) {
+    std ::string ir_filename = std::string(fst->extracted_filepath) + ".ll";
+    llvm::raw_fd_ostream ir_file(ir_filename, ec, llvm::sys::fs::OF_None);
 
-  if (!ec) {
-    bctx.module->print(ir_file, nullptr);
-    ir_file.close();
-  } else {
-    scu_pwarning(const_cast<char *>("Could not write IR file: %s\n"),
-                 ec.message().c_str());
+    if (!ec) {
+      bctx.module->print(ir_file, nullptr);
+      ir_file.close();
+    } else {
+      scu_pwarning(const_cast<char *>("Could not write IR file: %s\n"),
+                   ec.message().c_str());
+    }
   }
 
   std::string error;
