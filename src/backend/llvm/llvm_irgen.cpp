@@ -1,4 +1,4 @@
-#include "backend/llvm/llvm_irgen.h"
+#include "backend/llvm/llvm_irgen.hpp"
 
 extern "C" {
 #include "ast.h"

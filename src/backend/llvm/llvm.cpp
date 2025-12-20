@@ -1,8 +1,9 @@
-#include "backend/llvm/llvm_irgen.h"
+#include "backend/llvm/llvm_irgen.hpp"
 
 extern "C" {
 #include "ast.h"
 #include "backend/backend.h"
+#include "backend/llvm/llvm.h"
 #include "cstate.h"
 #include "ds/dynamic_array.h"
 #include "fstate.h"
