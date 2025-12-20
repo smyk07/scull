@@ -2,7 +2,9 @@
 
 fn main() : int {
   int number
-  fasm "input %d", number
+
+  printf("Enter a number: ")
+  scanf("%d", &number)
   
   int count = 0
   
@@ -13,7 +15,7 @@ fn main() : int {
     continue
   }
   
-  fasm "output_int %d", count
+  printf("Number of digits: %d\n", count)
   
   return 0
 }

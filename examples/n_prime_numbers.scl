@@ -2,13 +2,18 @@
 
 fn main() : int {
   int n
-  fasm "input %d", n
+
+  printf("Enter a number: ")
+  scanf("%d", &n)
+
+  printf("%d prime numbers: \n", n)
+
   n = n - 1
   
   int count = 0
   int num = 2
   
-  fasm "output_int %d", num
+  printf("%d\n", num)
   
   while count != n {
     int i = 2
@@ -31,7 +36,7 @@ fn main() : int {
     }
   
     if is_prime == 1 {
-      fasm "output_int %d", num
+      printf("%d\n", num)
       count = count + 1
     }
   

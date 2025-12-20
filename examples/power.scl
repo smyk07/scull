@@ -6,8 +6,8 @@ fn main() : int {
   int result = 1
   int counter = 0
   
-  fasm "input %d", base
-  fasm "input %d", exponent
+  printf("Enter base and exponent: ")
+  scanf("%d%d", &base, &exponent)
   
   if exponent == 0 then goto :end
   
@@ -17,7 +17,7 @@ fn main() : int {
   }
   
   :end
-  fasm "output_int %d", result
+  printf("%d\n", result)
   
   return 0
 }

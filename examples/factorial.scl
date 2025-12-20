@@ -2,7 +2,9 @@
 
 fn main() : int {
   int n
-  fasm "input %d", n
+
+  printf("Enter a number: ")
+  scanf("%d", &n)
   
   int result = 1
   
@@ -11,7 +13,7 @@ fn main() : int {
     n = n - 1
   }
   
-  fasm "output_int %d", result
+  printf("Factorial: %d\n", result)
   
   return 0
 }

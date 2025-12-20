@@ -1,14 +1,13 @@
 -include "io.scl"
 
 fn main() : int {
-  int const_zero = 0
-  int const_one = 1
-  
   int n
-  fasm "input %d", n
+
+  printf("Enter a number: ")
+  scanf("%d", &n)
   
-  if n == 0 then fasm "output_int %d", const_zero
-  if n == 1 then fasm "output_int %d", const_one
+  if n == 0 then printf("0\n") 
+  if n == 1 then printf("1\n") 
   
   int a = 0
   int b = 1
@@ -22,6 +21,6 @@ fn main() : int {
     count = count + 1
   }
   
-  fasm "output_int %d", fib
+  printf("%dth fibobacci number: %d\n", n, fib)
   return 0
 }

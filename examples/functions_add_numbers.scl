@@ -10,6 +10,7 @@ fn main() : int {
 
   int c = add_nums(a, b)
 
-  fasm "output_int %d", c
+  printf("%d\n", c)
+
   return 0
 }
