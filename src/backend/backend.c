@@ -77,4 +77,14 @@ void backend_compile(backend *backend, cstate *cst, fstate *fst) {
     backend->cleanup_function(cst, fst);
 }
 
-void backend_destroy(backend *backend) { free(backend); }
+void backend_destroy(backend *backend) {
+  if (!backend)
+    return;
+
+  backend->init_function = NULL;
+  backend->compile_function = NULL;
+  backend->emit_output_function = NULL;
+  backend->cleanup_function = NULL;
+
+  free(backend);
+}
