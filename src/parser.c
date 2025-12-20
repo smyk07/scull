@@ -67,6 +67,10 @@ static void parse_term_for_expr(parser *p, term_node *term,
     term->kind = TERM_CHAR;
     term->value.character = token.value.character;
     parser_advance(p);
+  } else if (token.kind == TOKEN_STRING) {
+    term->kind = TERM_STRING;
+    term->value.str = token.value.str;
+    parser_advance(p);
   } else if (token.kind == TOKEN_IDENTIFIER) {
     term->kind = TERM_IDENTIFIER;
     term->identifier.line = token.line;
@@ -140,7 +144,7 @@ static expr_node *parse_factor(parser *p, unsigned int *errors) {
   parser_current(p, &token, errors);
   if (token.kind == TOKEN_INT || token.kind == TOKEN_CHAR ||
       token.kind == TOKEN_IDENTIFIER || token.kind == TOKEN_POINTER ||
-      token.kind == TOKEN_ADDRESS_OF) {
+      token.kind == TOKEN_STRING || token.kind == TOKEN_ADDRESS_OF) {
     expr_node *node = scu_checked_malloc(sizeof(expr_node));
     node->kind = EXPR_TERM;
     node->line = token.line;
@@ -153,6 +157,11 @@ static expr_node *parse_factor(parser *p, unsigned int *errors) {
     } else if (token.kind == TOKEN_CHAR) {
       node->term.kind = TERM_CHAR;
       node->term.value.character = token.value.character;
+      parser_advance(p);
+      return node;
+    } else if (token.kind == TOKEN_STRING) {
+      node->term.kind = TERM_STRING;
+      node->term.value.str = token.value.str;
       parser_advance(p);
       return node;
     } else if (token.kind == TOKEN_IDENTIFIER) {
@@ -778,18 +787,29 @@ static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter,
   parser_advance(p);
   parser_current(p, &token, errors);
   instr->fn_declare_node.name = token.value.str;
-
   parser_advance(p);
+
   parser_current(p, &token, errors);
   if (token.kind != TOKEN_LPAREN) {
     scu_perror(errors, "Syntax error: expected '('\n");
+    return;
   }
-
   parser_advance(p);
-  dynamic_array_init(&instr->fn_declare_node.parameters, sizeof(variable));
-  parser_current(p, &token, errors);
 
-  while (token.kind != TOKEN_RPAREN) {
+  dynamic_array_init(&instr->fn_declare_node.parameters, sizeof(variable));
+
+  while (1) {
+    parser_current(p, &token, errors);
+    if (token.kind == TOKEN_RPAREN) {
+      break;
+    }
+
+    if (token.kind == TOKEN_ELLIPSIS) {
+      instr->fn_declare_node.is_variadic = true;
+      parser_advance(p);
+      break;
+    }
+
     variable param = {0};
 
     switch (token.kind) {
@@ -800,37 +820,38 @@ static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter,
       param.type = TYPE_CHAR;
       break;
     default:
-      break;
+      scu_perror(errors, "Expected type, got %s line %d\n",
+                 lexer_token_kind_to_str(token.kind), token.line);
+      return;
+    }
+    parser_advance(p);
+
+    parser_current(p, &token, errors);
+    if (token.kind == TOKEN_POINTER) {
+      param.type = TYPE_POINTER;
+      parser_advance(p);
     }
 
-    parser_advance(p);
     parser_current(p, &token, errors);
     param.name = token.value.str;
-
     dynamic_array_append(&instr->fn_declare_node.parameters, &param);
-
     parser_advance(p);
+
     parser_current(p, &token, errors);
     if (token.kind == TOKEN_COMMA) {
       parser_advance(p);
-      parser_current(p, &token, errors);
     }
   }
 
-  if (token.kind != TOKEN_RPAREN) {
-    scu_perror(errors, "Syntax error: expected ')'\n");
-  }
-
   parser_advance(p);
+
   dynamic_array_init(&instr->fn_declare_node.returntypes, sizeof(type));
   parser_current(p, &token, errors);
   if (token.kind == TOKEN_COLON) {
     parser_advance(p);
     parser_current(p, &token, errors);
-
     while (token.kind != TOKEN_LBRACE && token.kind != TOKEN_END) {
-      type ret_type;
-
+      type ret_type = TYPE_VOID;
       switch (token.kind) {
       case TOKEN_TYPE_INT:
         ret_type = TYPE_INT;
@@ -839,47 +860,37 @@ static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter,
         ret_type = TYPE_CHAR;
         break;
       default:
-        ret_type = TYPE_VOID;
         break;
       }
-
       dynamic_array_append(&instr->fn_declare_node.returntypes, &ret_type);
-
       parser_advance(p);
       parser_current(p, &token, errors);
       if (token.kind == TOKEN_COMMA) {
         parser_advance(p);
-        parser_current(p, &token, errors);
       } else {
         break;
       }
     }
   }
 
+  parser_current(p, &token, errors);
   if (token.kind == TOKEN_LBRACE) {
     instr->kind = INSTR_FN_DEFINE;
     instr->fn_define_node.kind = FN_DEFINED;
-
     instr->fn_define_node.defined.variables = ht_new(sizeof(variable));
-
     dynamic_array_init(&instr->fn_define_node.defined.instrs,
                        sizeof(instr_node));
 
     parser_advance(p);
-    parser_current(p, &token, errors);
-
-    while (token.kind != TOKEN_RBRACE) {
+    while (1) {
+      parser_current(p, &token, errors);
+      if (token.kind == TOKEN_RBRACE)
+        break;
       instr_node *_instr = scu_checked_malloc(sizeof(instr_node));
       parse_instr(p, _instr, loop_counter, errors);
       dynamic_array_append(&instr->fn_define_node.defined.instrs, _instr);
       free(_instr);
-      parser_current(p, &token, errors);
     }
-
-    if (token.kind != TOKEN_RBRACE) {
-      scu_perror(errors, "Syntax error: expected '}'\n");
-    }
-
     parser_advance(p);
   }
 }
@@ -1018,6 +1029,7 @@ static void check_var_and_print(variable *var) {
   switch (var->type) {
   case TYPE_INT:
   case TYPE_CHAR:
+  case TYPE_STRING:
     printf("%s", var->name);
     break;
   case TYPE_POINTER:
@@ -1048,6 +1060,9 @@ static void check_term_and_print(term_node *term) {
   case TERM_CHAR:
     printf("\'%c\'", term->value.character);
     break;
+  case TERM_STRING:
+    printf("\"%s\"", term->value.str);
+    break;
   case TERM_IDENTIFIER:
     printf("%s", term->identifier.name);
     break;
@@ -1059,7 +1074,6 @@ static void check_term_and_print(term_node *term) {
     printf("&%s", term->identifier.name);
     break;
   case TERM_ARRAY_ACCESS:
-    //...
     printf("%s[", term->array_access.array_var.name);
     check_expr_and_print(term->array_access.index_expr);
     printf("]");
@@ -1321,6 +1335,9 @@ void print_instr(instr_node *instr) {
         printf(", ");
       }
     }
+    if (instr->fn_declare_node.is_variadic) {
+      printf(", ...");
+    }
     printf(")");
 
     if (instr->fn_declare_node.returntypes.count > 0) {
@@ -1370,6 +1387,9 @@ void print_instr(instr_node *instr) {
       if (i < instr->fn_define_node.parameters.count - 1) {
         printf(", ");
       }
+    }
+    if (instr->fn_define_node.is_variadic) {
+      printf(", ...");
     }
     printf(")");
 

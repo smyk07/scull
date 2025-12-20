@@ -1,4 +1,5 @@
 #include "backend/llvm/llvm_irgen.hpp"
+#include "var.h"
 
 extern "C" {
 #include "ast.h"
@@ -21,6 +22,8 @@ static llvm::Type *scl_type_to_llvm(llvm_backend_ctx &ctx, type t) {
   case TYPE_CHAR:
     return llvm::Type::getInt8Ty(*ctx.context);
   case TYPE_POINTER:
+    return llvm::PointerType::get(*ctx.context, 0);
+  case TYPE_STRING:
     return llvm::PointerType::get(*ctx.context, 0);
   case TYPE_VOID:
     return llvm::Type::getVoidTy(*ctx.context);
@@ -54,6 +57,18 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
   case TERM_CHAR:
     return llvm::ConstantInt::get(llvm::Type::getInt8Ty(*ctx.context),
                                   term->value.character, false);
+
+  case TERM_STRING: {
+    llvm::Constant *str_const =
+        llvm::ConstantDataArray::getString(*ctx.context, term->value.str, true);
+
+    llvm::GlobalVariable *global_str = new llvm::GlobalVariable(
+        *ctx.module, str_const->getType(), true,
+        llvm::GlobalValue::PrivateLinkage, str_const, ".str");
+
+    return llvm::ConstantExpr::getBitCast(
+        global_str, llvm::PointerType::get(*ctx.context, 0));
+  }
 
   case TERM_IDENTIFIER: {
     auto it = named_values.find(term->identifier.name);
@@ -132,6 +147,7 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
     }
 
     llvm::AllocaInst *array_alloca = it->second;
+    llvm::Type *alloca_type = array_alloca->getAllocatedType();
 
     llvm::Value *index = llvm_irgen_expr(ctx, access->index_expr);
     if (!index)
@@ -142,13 +158,20 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
           index, llvm::Type::getInt32Ty(*ctx.context), true, "idx_cast");
     }
 
-    llvm::Value *indices[] = {
-        llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx.context), 0), index};
-
-    llvm::Value *elem_ptr = ctx.builder->CreateGEP(
-        array_alloca->getAllocatedType(), array_alloca, indices, "arrayelem");
-
+    llvm::Value *elem_ptr = nullptr;
     llvm::Type *elem_type = scl_type_to_llvm(ctx, access->array_var.type);
+
+    if (alloca_type->isArrayTy()) {
+      llvm::Value *indices[] = {
+          llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx.context), 0),
+          index};
+      elem_ptr = ctx.builder->CreateGEP(alloca_type, array_alloca, indices,
+                                        "arrayelem");
+    } else {
+      elem_ptr =
+          ctx.builder->CreateGEP(elem_type, array_alloca, index, "arrayelem");
+    }
+
     return ctx.builder->CreateLoad(elem_type, elem_ptr, "arrayval");
   }
 
@@ -396,12 +419,10 @@ static void llvm_irgen_initialize_array(llvm_backend_ctx &ctx,
     if (!elem_val)
       continue;
 
-    llvm::Value *index_list[] = {
-        llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx.context), 0),
-        llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx.context), i)};
-
     llvm::Value *elem_ptr = ctx.builder->CreateGEP(
-        alloca->getAllocatedType(), alloca, index_list, "array_elem_ptr");
+        elem_type, alloca,
+        llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx.context), i),
+        "array_elem_ptr");
 
     ctx.builder->CreateStore(elem_val, elem_ptr);
   }
@@ -437,43 +458,43 @@ static void llvm_irgen_instr_assign_to_array_subscript(
 
   auto it = named_values.find(var->name);
   if (it == named_values.end()) {
-    scu_perror(NULL,
-               const_cast<char *>(
-                   "Unknown array variable '%s' in subscript assignment\n"),
+    scu_perror(NULL, const_cast<char *>("Unknown array variable '%s'\n"),
                var->name);
     return;
   }
+
   llvm::AllocaInst *array_alloca = it->second;
+  llvm::Type *alloca_type = array_alloca->getAllocatedType();
 
   llvm::Value *index_val = llvm_irgen_expr(ctx, assign->index_expr);
   if (!index_val) {
     scu_perror(NULL,
-               const_cast<char *>(
-                   "Failed to evaluate index expression for array '%s'\n"),
-               var->name);
+               const_cast<char *>("Failed to evaluate index expression\n"));
     return;
   }
 
   if (index_val->getType()->getIntegerBitWidth() != 32) {
-    index_val = ctx.builder->CreateIntCast(index_val,
-                                           llvm::Type::getInt32Ty(*ctx.context),
-                                           /*isSigned=*/true, "idx_cast");
+    index_val = ctx.builder->CreateIntCast(
+        index_val, llvm::Type::getInt32Ty(*ctx.context), true, "idx_cast");
   }
 
-  llvm::Value *indices[] = {
-      llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx.context), 0),
-      index_val};
+  llvm::Value *elem_ptr = nullptr;
+  llvm::Type *elem_type = scl_type_to_llvm(ctx, var->type);
 
-  llvm::Value *elem_ptr = ctx.builder->CreateGEP(
-      array_alloca->getAllocatedType(), array_alloca, indices, "elem_ptr");
+  if (alloca_type->isArrayTy()) {
+    llvm::Value *indices[] = {
+        llvm::ConstantInt::get(llvm::Type::getInt32Ty(*ctx.context), 0),
+        index_val};
+    elem_ptr =
+        ctx.builder->CreateGEP(alloca_type, array_alloca, indices, "elem_ptr");
+  } else {
+    elem_ptr =
+        ctx.builder->CreateGEP(elem_type, array_alloca, index_val, "elem_ptr");
+  }
 
   llvm::Value *rhs_val = llvm_irgen_expr(ctx, &assign->expr_to_assign);
   if (!rhs_val) {
-    scu_perror(
-        NULL,
-        const_cast<char *>(
-            "Failed to evaluate right-hand side in assignment to '%s'\n"),
-        var->name);
+    scu_perror(NULL, const_cast<char *>("Failed to evaluate RHS\n"));
     return;
   }
 
@@ -683,7 +704,7 @@ static void llvm_irgen_instr_fn_define(llvm_backend_ctx &ctx, fn_node *fn) {
   }
 
   llvm::FunctionType *fn_type =
-      llvm::FunctionType::get(return_type, param_types, false);
+      llvm::FunctionType::get(return_type, param_types, fn->is_variadic);
 
   llvm::Function *function = ctx.module->getFunction(fn->name);
   if (!function) {
@@ -749,7 +770,7 @@ static void llvm_irgen_instr_fn_declare(llvm_backend_ctx &ctx, fn_node *fn) {
   }
 
   llvm::FunctionType *fn_type =
-      llvm::FunctionType::get(return_type, param_types, false);
+      llvm::FunctionType::get(return_type, param_types, fn->is_variadic);
 
   llvm::Function::Create(fn_type, llvm::Function::ExternalLinkage, fn->name,
                          ctx.module);
@@ -782,14 +803,6 @@ static void llvm_irgen_instr_fn_call(llvm_backend_ctx &ctx,
   if (!callee) {
     scu_perror(NULL, const_cast<char *>("Unknown function '%s' in call\n"),
                call->name);
-    return;
-  }
-
-  if (callee->arg_size() != call->parameters.count) {
-    scu_perror(
-        NULL,
-        const_cast<char *>("Function '%s' expects %u arguments, got %zu\n"),
-        call->name, callee->arg_size(), call->parameters.count);
     return;
   }
 

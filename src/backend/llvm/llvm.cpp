@@ -71,7 +71,7 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
   }
 
   if (cst->options.emit_llvm) {
-    std ::string ir_filename = std::string(fst->extracted_filepath) + ".ll";
+    std::string ir_filename = std::string(fst->extracted_filepath) + ".ll";
     llvm::raw_fd_ostream ir_file(ir_filename, ec, llvm::sys::fs::OF_None);
 
     if (!ec) {
@@ -109,33 +109,35 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
 
   bctx.module->setDataLayout(bctx.target_machine->createDataLayout());
 
-  std::string obj_filename = std::string(fst->extracted_filepath) + ".o";
+  if (cst->options.emit_asm) {
+    std::string asm_filename = std::string(fst->extracted_filepath) + ".s";
+    llvm::raw_fd_ostream asm_dest(asm_filename, ec, llvm::sys::fs::OF_None);
 
+    if (ec) {
+      scu_pwarning(const_cast<char *>("Could not open asm file: %s\n"),
+                   ec.message().c_str());
+      return;
+    }
+
+    llvm::legacy::PassManager asm_pass;
+    if (bctx.target_machine->addPassesToEmitFile(
+            asm_pass, asm_dest, nullptr, llvm::CodeGenFileType::AssemblyFile)) {
+      scu_pwarning(const_cast<char *>("TargetMachine can't emit assembly\n"));
+    } else {
+      asm_pass.run(*bctx.module);
+      asm_dest.flush();
+    }
+
+    return;
+  }
+
+  std::string obj_filename = std::string(fst->extracted_filepath) + ".o";
   llvm::raw_fd_ostream dest(obj_filename, ec, llvm::sys::fs::OF_None);
 
   if (ec) {
     scu_perror(NULL, const_cast<char *>("Could not open output file: %s\n"),
                ec.message().c_str());
     return;
-  }
-
-  if (cst->options.emit_asm) {
-    std::string asm_filename = std::string(fst->extracted_filepath) + ".s";
-    llvm::raw_fd_ostream asm_dest(asm_filename, ec, llvm::sys::fs::OF_None);
-    if (ec) {
-      scu_pwarning(const_cast<char *>("Could not open asm file: %s\n"),
-                   ec.message().c_str());
-    } else {
-      llvm::legacy::PassManager asm_pass;
-      if (bctx.target_machine->addPassesToEmitFile(
-              asm_pass, asm_dest, nullptr,
-              llvm::CodeGenFileType::AssemblyFile)) {
-        scu_pwarning(const_cast<char *>("TargetMachine can't emit assembly\n"));
-      } else {
-        asm_pass.run(*bctx.module);
-        asm_dest.flush();
-      }
-    }
   }
 
   llvm::legacy::PassManager pass;

@@ -11,7 +11,13 @@
 /*
  * @enum type: represents data types.
  */
-typedef enum type { TYPE_INT = 0, TYPE_CHAR, TYPE_POINTER, TYPE_VOID } type;
+typedef enum type {
+  TYPE_INT = 0,
+  TYPE_CHAR,
+  TYPE_STRING,
+  TYPE_POINTER,
+  TYPE_VOID
+} type;
 
 /*
  * @struct variable: represents a variable.

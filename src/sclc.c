@@ -87,6 +87,11 @@ int main(int argc, char *argv[]) {
 
   backend_destroy(backend);
 
+  if (cst->options.emit_llvm || cst->options.emit_asm) {
+    cstate_free(cst);
+    return 0;
+  }
+
   size_t total_len = 0;
   for (size_t i = 0; i < cst->files.count; i++) {
     fstate *fst;

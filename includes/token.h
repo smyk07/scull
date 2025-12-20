@@ -41,6 +41,7 @@ typedef enum token_kind {
   TOKEN_CHAR,
   TOKEN_STRING,
   TOKEN_POINTER,
+  TOKEN_ELLIPSIS, //'...'
 
   /*
    * Brackets

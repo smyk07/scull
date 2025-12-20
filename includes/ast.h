@@ -18,6 +18,7 @@
 typedef enum term_kind {
   TERM_INT = 0,
   TERM_CHAR,
+  TERM_STRING,
   TERM_IDENTIFIER,
   TERM_POINTER,
   TERM_DEREF,
@@ -218,6 +219,8 @@ typedef struct fn_node {
   char *name;
   fn_kind kind;
   dynamic_array returntypes;
+
+  bool is_variadic;
   dynamic_array parameters;
 
   union {

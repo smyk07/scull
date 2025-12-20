@@ -433,6 +433,22 @@ static token lexer_next_token(lexer *l) {
         .kind = TOKEN_STRING, .value.str = string_value, .line = l->line};
   }
 
+  else if (l->ch == '.') {
+    lexer_read_char(l);
+
+    if (l->ch == '.') {
+      lexer_read_char(l);
+
+      if (l->ch == '.') {
+        lexer_read_char(l);
+        return (token){
+            .kind = TOKEN_ELLIPSIS, .value.str = NULL, .line = l->line};
+      }
+    }
+
+    return (token){.kind = TOKEN_INVALID, .value.str = NULL, .line = l->line};
+  }
+
   else if (isalnum(l->ch) || l->ch == '_') {
     string_slice slice = {.str = l->buffer + l->pos, .len = 0};
 
@@ -601,6 +617,8 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "string";
   case TOKEN_POINTER:
     return "pointer";
+  case TOKEN_ELLIPSIS:
+    return "... (ellipsis)";
   case TOKEN_ASSIGN:
     return "assign";
   case TOKEN_LPAREN:

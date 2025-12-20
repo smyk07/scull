@@ -3,6 +3,7 @@
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
 #include "utils.h"
+#include "var.h"
 
 #include <stddef.h>
 
@@ -63,6 +64,8 @@ static const char *type_to_str(type type) {
     return "int";
   case TYPE_CHAR:
     return "char";
+  case TYPE_STRING:
+    return "string";
   case TYPE_POINTER:
     return "ptr";
   case TYPE_VOID:
@@ -152,6 +155,7 @@ static void declare_array(variable *arr_to_declare, expr_node *size_expr,
  */
 static void term_check_variables(term_node *term, ht *variables, ht *functions,
                                  unsigned int *errors) {
+
   switch (term->kind) {
   case TERM_IDENTIFIER:
     variable *var = ht_search(variables, term->identifier.name);
@@ -411,10 +415,10 @@ static type term_type(term_node *term, ht *variables, ht *functions,
   switch (term->kind) {
   case TERM_INT:
     return TYPE_INT;
-
   case TERM_CHAR:
     return TYPE_CHAR;
-
+  case TERM_STRING:
+    return TYPE_STRING;
   case TERM_POINTER:
   case TERM_DEREF:
   case TERM_ADDOF:
@@ -453,12 +457,19 @@ static type term_type(term_node *term, ht *variables, ht *functions,
       return TYPE_VOID;
     }
 
-    if (term->fn_call.parameters.count != fn->parameters.count) {
+    if (!fn->is_variadic &&
+        term->fn_call.parameters.count != fn->parameters.count) {
       scu_perror(errors,
                  "Function '%s' expects %zu arguments, but %zu were provided "
                  "[line %zu]\n",
                  term->fn_call.name, fn->parameters.count,
                  term->fn_call.parameters.count, term->line);
+    } else if (fn->is_variadic &&
+               term->fn_call.parameters.count < fn->parameters.count) {
+      scu_perror(errors,
+                 "Variadic function '%s' requires at least %zu fixed arguments "
+                 "[line %zu]\n",
+                 term->fn_call.name, fn->parameters.count, term->line);
     }
 
     for (size_t i = 0;
@@ -471,12 +482,17 @@ static type term_type(term_node *term, ht *variables, ht *functions,
 
       type arg_type =
           expr_type(&arg_expr, param.type, variables, functions, errors);
-      if (arg_type != param.type && param.type != TYPE_POINTER) {
-        scu_perror(errors,
-                   "Type mismatch in argument %zu to function '%s': expected "
-                   "%s, got %s [line %zu]\n",
-                   i + 1, term->fn_call.name, type_to_str(param.type),
-                   type_to_str(arg_type), term->line);
+
+      if (arg_type != param.type) {
+        if (!(param.type == TYPE_POINTER &&
+              (arg_type == TYPE_STRING || arg_type == TYPE_POINTER))) {
+          scu_perror(
+              errors,
+              "Type mismatch in argument %zu to function '%s': expected %s, "
+              "got %s [line %zu]\n",
+              i + 1, term->fn_call.name, type_to_str(param.type),
+              type_to_str(arg_type), term->line);
+        }
       }
     }
 
@@ -669,6 +685,17 @@ static void register_function(fn_node *fn, ht *functions,
 
   fn_node *existing = ht_search(functions, fn->name);
   if (existing) {
+    if (existing->is_variadic != fn->is_variadic) {
+      scu_perror(errors, "Function '%s' variadic mismatch\n", fn->name);
+      return;
+    }
+
+    if (!fn->is_variadic && existing->parameters.count != fn->parameters.count)
+      scu_perror(errors,
+                 "Function '%s' parameter count mismatch: declared with %zu, "
+                 "but has %zu\n",
+                 fn->name, existing->parameters.count, fn->parameters.count);
+
     if (fn->kind == FN_DEFINED && existing->kind == FN_DEFINED) {
       scu_perror(errors, "Duplicate function definition: %s\n", fn->name);
       return;
@@ -709,22 +736,31 @@ static void check_function_call(fn_call_node *fn_call, ht *functions,
     return;
 
   fn_node *fn = ht_search(functions, fn_call->name);
+
   if (!fn) {
     scu_perror(errors, "Call to undeclared function: %s [line %zu]\n",
                fn_call->name, line);
     return;
   }
 
-  if (fn_call->parameters.count != fn->parameters.count) {
+  if (!fn->is_variadic && fn_call->parameters.count != fn->parameters.count) {
     scu_perror(errors,
                "Function '%s' expects %zu arguments, but %zu were provided "
                "[line %zu]\n",
                fn_call->name, fn->parameters.count, fn_call->parameters.count,
                line);
     return;
+  } else if (fn->is_variadic &&
+             fn_call->parameters.count < fn->parameters.count) {
+    scu_perror(errors,
+               "Variadic function '%s' requires at least %zu fixed arguments "
+               "[line %zu]\n",
+               fn_call->name, fn->parameters.count, line);
+    return;
   }
 
-  for (size_t i = 0; i < fn_call->parameters.count; i++) {
+  for (size_t i = 0; i < fn_call->parameters.count && i < fn->parameters.count;
+       i++) {
     expr_node arg_expr;
     dynamic_array_get(&fn_call->parameters, i, &arg_expr);
 
@@ -733,6 +769,7 @@ static void check_function_call(fn_call_node *fn_call, ht *functions,
 
     type arg_type =
         expr_type(&arg_expr, param.type, variables, functions, errors);
+
     if (arg_type != param.type && param.type != TYPE_POINTER) {
       scu_perror(errors,
                  "Type mismatch in argument %zu to function '%s': expected %s, "
@@ -824,7 +861,7 @@ static void check_function_body(fn_node *fn, ht *functions,
   register_function_parameters(fn);
 
   size_t saved_offset = current_stack_offset;
-  current_stack_offset = fn->parameters.count; // Start after parameters
+  current_stack_offset = fn->parameters.count;
 
   for (size_t i = 0; i < fn->defined.instrs.count; i++) {
     instr_node instr;
@@ -853,6 +890,10 @@ void check_semantics(dynamic_array *instrs, ht *variables, ht *functions,
       // since this is a union anyways
       register_function(&instr.fn_declare_node, functions, errors);
     }
+
+    if (instr.kind == INSTR_FN_CALL)
+      check_function_call(&instr.fn_call, functions, variables, errors,
+                          instr.line);
   }
 
   // Validate everything
