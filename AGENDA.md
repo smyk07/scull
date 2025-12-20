@@ -10,6 +10,11 @@
 - [x] NEC Switch over to LLVM backend (use c bindings)
   - Targets: x86_64, ARM64, RISCV64
 
+- [x] NEC Handle LLVM target selection in cstate, rather than in backend.c or llvm.c
+
+- [ ] NEC -S cli flag and --emit-llvm flag, and general CLI improvements
+  - only emit the output file in current directory unless specified, else use `/tmp`
+
 - [ ] NEC Develop C Backend
 
 - [ ] NEC Arenas / Allocators instead of the current allocation method
@@ -25,7 +30,7 @@
 
 ## Language Related
 
-- [ ] NEC make functions and arrays better, fix general bugs and finnickiness
+- [ ] NEC Parser bug fixes and proper memory management
 
 - [ ] NEC Strings
 
