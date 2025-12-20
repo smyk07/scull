@@ -111,7 +111,8 @@ int main(int argc, char *argv[]) {
     strcat(obj_file_list, ".o");
   }
 
-  ld_link(cst->output_filepath, obj_file_list);
+  ld_link(cst->sysroot, cst->llvm_target_triple, cst->output_filepath,
+          obj_file_list);
 
   free(obj_file_list);
 

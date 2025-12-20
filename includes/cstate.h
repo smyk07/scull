@@ -67,6 +67,8 @@ typedef struct cstate {
    */
   char *output_filepath;
 
+  char *sysroot;
+
   char *llvm_target_triple;
 
   /*

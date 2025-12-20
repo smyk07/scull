@@ -29,6 +29,9 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
     printf("--target [TARGET]                     Specify LLVM supported "
            "output target triple\n");
 
+    printf("--sysroot [PATH]                      Specify root directory for "
+           "headers and libraries");
+
     printf("--output <output_filename>    OR  -o  Specify output binary "
            "filename.\n");
 
@@ -64,34 +67,64 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
   cst->include_dir = NULL;
   cst->error_count = 0;
   cst->llvm_target_triple = LLVMGetDefaultTargetTriple();
+  cst->sysroot = strdup("/");
 
   while (i < argc) {
     char *arg = argv[i];
 
     if (strcmp(arg, "--target") == 0) {
+      LLVMInitializeAllTargetInfos();
+      LLVMInitializeAllTargets();
+      LLVMInitializeAllTargetMCs();
+      LLVMInitializeAllAsmParsers();
+      LLVMInitializeAllAsmPrinters();
+
       if (i + 1 >= argc) {
         scu_perror(&cst->error_count, "Missing target after %s\n", arg);
         exit(1);
       }
 
-      const char *target_str = argv[i + 1];
+      char *target_str = argv[i + 1];
       char *err = NULL;
       LLVMTargetRef T = NULL;
 
-      char *norm_triple = LLVMNormalizeTargetTriple(target_str);
-
-      if (LLVMGetTargetFromTriple(norm_triple, &T, &err) != 0) {
+      if (LLVMGetTargetFromTriple(target_str, &T, &err) != 0) {
         scu_perror(&cst->error_count,
                    "Invalid or unsupported target triple '%s': %s\n",
                    target_str, err ? err : "unknown error");
 
         if (err)
           LLVMDisposeMessage(err);
-        LLVMDisposeMessage(norm_triple);
+        LLVMDisposeMessage(target_str);
         exit(1);
       }
 
-      cst->llvm_target_triple = norm_triple;
+      cst->llvm_target_triple = target_str;
+
+      i += 2;
+      continue;
+    }
+
+    if (strcmp(arg, "--sysroot") == 0) {
+      if (i + 1 >= argc) {
+        scu_perror(&cst->error_count, "Missing path after %s\n", arg);
+        exit(1);
+      }
+
+      struct stat st;
+      if (stat(argv[i + 1], &st) != 0) {
+        scu_perror(&cst->error_count, "Sysroot directory does not exist: %s\n",
+                   argv[i + 1]);
+        exit(1);
+      }
+
+      if (!S_ISDIR(st.st_mode)) {
+        scu_perror(&cst->error_count, "Sysroot path is not a directory: %s\n",
+                   argv[i + 1]);
+        exit(1);
+      }
+
+      cst->sysroot = strdup(argv[i + 1]);
 
       i += 2;
       continue;
