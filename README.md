@@ -3,6 +3,14 @@
 A C and Go like systems level programming language. Final name yet to be decided.
 Only linux systems are supported for now.
 
+```
+-include "io.scl"
+
+fn main() : int {
+  printf("Hello, World\n")
+}
+```
+
 ## Inspiration
 
 - [The C Programming Language](<https://en.wikipedia.org/wiki/C_(programming_language)>)
@@ -18,7 +26,7 @@ Only linux systems are supported for now.
 
 ## Tools required
 
-- [`gnu ld`](https://www.gnu.org/software/binutils)
+- [`clang`](https://clang.llvm.org) (for linking)
 
 ## Usage
 
