@@ -546,6 +546,7 @@ static type expr_type(expr_node *expr, type target_type, ht *variables,
                "Type mismatch in arithmetic expression: %s vs %s [line %u]\n",
                lhs_type_str, rhs_type_str, expr->line);
   }
+
   return lhs;
 }
 

@@ -454,6 +454,8 @@ static void parse_declare(parser *p, instr_node *instr, unsigned int *errors) {
   parser_advance(p);
 
   parser_current(p, &token, errors);
+  if (_type == TYPE_CHAR && token.kind == TOKEN_POINTER)
+    _type = TYPE_STRING;
   _name = token.value.str;
   _line = token.line;
   parser_advance(p);
