@@ -8,6 +8,7 @@ Only linux systems are supported for now.
 
 fn main() : int {
   printf("Hello, World\n")
+  return 0
 }
 ```
 
