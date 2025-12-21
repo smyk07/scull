@@ -36,6 +36,8 @@ typedef struct coptions {
    */
   bool include_dir_specified;
 
+  bool target_specified;
+
   /*
    * Emit LLVM IR
    */
@@ -66,8 +68,6 @@ typedef struct cstate {
    * Ex: main.sclc => main
    */
   char *output_filepath;
-
-  char *sysroot;
 
   char *llvm_target_triple;
 

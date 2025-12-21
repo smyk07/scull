@@ -12,6 +12,10 @@ fn main() : int {
 }
 ```
 
+> [!NOTE]
+> While cross compilation is supported, cross linking is not.
+> You'll need to link for the target platform.
+
 ## Inspiration
 
 - [The C Programming Language](<https://en.wikipedia.org/wiki/C_(programming_language)>)
@@ -27,7 +31,7 @@ fn main() : int {
 
 ## Tools required
 
-- [`clang`](https://clang.llvm.org) (for linking)
+- [`lld`](https://lld.llvm.org/) (for linking)
 
 ## Usage
 

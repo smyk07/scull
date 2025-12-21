@@ -20,7 +20,7 @@ CFLAGS = -std=c23 -g -Wall -Wextra -I$(INC_DIR)
 CXXFLAGS = -std=c++17 -g -Wall -Wextra -I$(INC_DIR)
 
 LLVM_CXXFLAGS = $(shell llvm-config --cxxflags)
-LLVM_LDFLAGS = $(shell llvm-config --ldflags --libs all --system-libs)
+LLVM_LDFLAGS = $(shell llvm-config --ldflags --libs all --system-libs) -llldELF -llldCommon
 
 C_SRCS = $(shell find $(SRC_DIR) -name "*.c" -type f)
 CXX_SRCS = $(shell find $(SRC_DIR) -name "*.cpp" -type f)
