@@ -7,10 +7,29 @@ Only linux systems are supported for now.
 -include "io.scl"
 
 fn main() : int {
-  printf("Hello, World\n")
+  printf("Hello, World!\n")
   return 0
 }
 ```
+
+Compile and run:
+
+```
+# clone and cd to the repo
+$ git clone https://github.com/smyk07/scull.git
+$ cd scull
+
+# build (llvm, clang, and lld need to be installed before this step)
+$ make -j4
+
+# compile the program
+$ ./bin/sclc -i ./lib hello.scl
+
+# run the compiled binary
+$ ./hello
+```
+
+More examples in `./examples`.
 
 > [!NOTE]
 > While cross compilation is supported, cross linking is not.
@@ -32,23 +51,3 @@ fn main() : int {
 ## Tools required
 
 - [`lld`](https://lld.llvm.org/) (for linking)
-
-## Usage
-
-Build and install the compiler:
-
-```
-make install
-```
-
-Compile the examples in `./examples` like so:
-
-```
-sclc -i ./lib ./examples/n_prime_numbers.scl
-```
-
-Run the executable:
-
-```
-./examples/n_prime_numbers
-```
