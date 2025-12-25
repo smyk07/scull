@@ -1,5 +1,6 @@
 #include "fstate.h"
 #include "lexer.h"
+#include "parser.h"
 #include "utils.h"
 #include <stdlib.h>
 #include <string.h>
@@ -7,7 +8,7 @@
 fstate *create_new_fstate(const char *filepath) {
   fstate *fst = scu_checked_malloc(sizeof(fstate));
 
-  fst->filepath = strdup(filepath);
+  fst->filepath = filepath;
   fst->extracted_filepath = scu_extract_name(fst->filepath);
 
   fst->code_buffer_len =
@@ -48,6 +49,7 @@ void free_fstate(fstate *fst) {
   free_if_instrs(fst->program);
   free_expressions(fst->program);
   free_loops(fst->program);
+  free_fns(fst->program);
   dynamic_array_free(&fst->program->instrs);
   free(fst->program);
 

@@ -1,11 +1,11 @@
 #include "backend/llvm/llvm_irgen.hpp"
-#include "var.h"
 
 extern "C" {
 #include "ast.h"
 #include "ds/dynamic_array.h"
 #include "parser.h"
 #include "utils.h"
+#include "var.h"
 }
 
 #include <llvm/IR/IRBuilder.h>

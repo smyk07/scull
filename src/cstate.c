@@ -232,6 +232,9 @@ void cstate_free(cstate *s) {
   if (s->output_filepath != NULL)
     free(s->output_filepath);
 
+  if (s->llvm_target_triple != NULL)
+    free(s->llvm_target_triple);
+
   for (size_t i = 0; i < s->files.count; i++) {
     fstate *fst;
     dynamic_array_get(&s->files, i, &fst);

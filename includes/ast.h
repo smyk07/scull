@@ -230,7 +230,7 @@ typedef struct fn_node {
     } defined;
 
     struct {
-      //...
+      // JUST A PLACEHOLDER, WILL APPEAR IN WARNINGS
     } declared;
   };
 } fn_node;

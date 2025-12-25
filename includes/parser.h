@@ -73,14 +73,8 @@ void free_expressions(program_node *program);
  */
 void free_loops(program_node *program);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void free_fns(program_node *program);
 
 void print_instr(instr_node *instr);
-
-#ifdef __cplusplus
-}
-#endif
 
 #endif

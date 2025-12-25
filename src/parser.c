@@ -499,6 +499,8 @@ static void parse_declare(parser *p, instr_node *instr, unsigned int *errors) {
   }
 }
 
+static void free_expr_children(expr_node *expr);
+
 /*
  * @brief: parse a function call.
  *
@@ -530,6 +532,7 @@ static void parse_fn_call(parser *p, instr_node *instr, unsigned int *errors) {
   while (token.kind != TOKEN_RPAREN) {
     expr_node *arg = parse_expr(p, errors);
     dynamic_array_append(&instr->fn_call.parameters, arg);
+    free_expr_children(arg);
     free(arg);
 
     parser_current(p, &token, errors);
@@ -917,8 +920,8 @@ static void parse_ret(parser *p, instr_node *instr, unsigned int *errors) {
 
   while (token.kind != TOKEN_RBRACE) {
     expr_node *expr = parse_expr(p, errors);
-
     dynamic_array_append(&instr->ret_node.returnvals, expr);
+    free_expr_children(expr);
     free(expr);
 
     parser_current(p, &token, errors);
@@ -1540,6 +1543,58 @@ void free_loops(program_node *program) {
       free_expressions(&temp);
       free_loops(&temp);
       dynamic_array_free(&instr->loop.instrs);
+    }
+  }
+}
+
+static void free_fn_calls(program_node *program) {
+  for (unsigned int i = 0; i < program->instrs.count; i++) {
+    instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
+    if (instr->kind == INSTR_FN_CALL) {
+      for (unsigned int j = 0; j < instr->fn_call.parameters.count; j++) {
+        expr_node *expr = instr->fn_call.parameters.items +
+                          (j * instr->fn_call.parameters.item_size);
+        free_expr_children(expr);
+      }
+      dynamic_array_free(&instr->fn_call.parameters);
+    }
+  }
+}
+
+static void free_ret_node(program_node *program) {
+  for (unsigned int i = 0; i < program->instrs.count; i++) {
+    instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
+    if (instr->kind == INSTR_RETURN) {
+      for (unsigned int j = 0; j < instr->ret_node.returnvals.count; j++) {
+        expr_node *expr = instr->ret_node.returnvals.items +
+                          (j * instr->ret_node.returnvals.item_size);
+        free_expr_children(expr);
+      }
+      dynamic_array_free(&instr->ret_node.returnvals);
+    }
+  }
+}
+
+void free_fns(program_node *program) {
+  for (unsigned int i = 0; i < program->instrs.count; i++) {
+    instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
+    if (instr->kind == INSTR_FN_DECLARE || instr->kind == INSTR_FN_DEFINE) {
+      dynamic_array_free(&instr->fn_declare_node.parameters);
+      dynamic_array_free(&instr->fn_declare_node.returntypes);
+
+      if (instr->kind == INSTR_FN_DEFINE) {
+        ht_del_ht(instr->fn_define_node.defined.variables);
+
+        program_node temp = {0, instr->fn_define_node.defined.instrs};
+
+        free_if_instrs(&temp);
+        free_expressions(&temp);
+        free_loops(&temp);
+        free_fn_calls(&temp);
+        free_ret_node(&temp);
+
+        dynamic_array_free(&temp.instrs);
+      }
     }
   }
 }
