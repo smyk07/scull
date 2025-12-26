@@ -58,16 +58,16 @@ int main(int argc, char *argv[]) {
 
     // Parsing
     parser_init(fst->tokens, fst->parser);
-    parser_parse_program(fst->parser, fst->program, &fst->error_count);
+    parser_parse_program(fst->parser, fst->program_ast, &fst->error_count);
 
     // Parsing debug statements
     if (cst->options.verbose) {
       scu_pdebug("Parsing Debug Statements for %s:\n", fst->filepath);
-      parser_print_program(fst->program);
+      print_ast(fst->program_ast);
     }
 
     // Semantic Analysis
-    check_semantics(&fst->program->instrs, fst->variables, fst->functions,
+    check_semantics(&fst->program_ast->instrs, fst->variables, fst->functions,
                     &fst->error_count);
 
     // Semantic Debug Statement

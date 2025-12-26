@@ -29,12 +29,14 @@ typedef enum term_kind {
   TERM_FUNCTION_CALL,
 } term_kind;
 
+typedef struct expr_node expr_node;
+
 /*
  * @struct array_access_node: represents an array access or subscript node.
  */
 typedef struct array_access_node {
   variable array_var;
-  struct expr_node *index_expr;
+  expr_node *index_expr;
 } array_access_node;
 
 /*
@@ -154,7 +156,7 @@ typedef struct instr_node instr_node;
 
 typedef struct initialize_variable_node {
   variable var;
-  expr_node expr;
+  expr_node *expr;
 } initialize_variable_node;
 
 typedef struct declare_array_node {
@@ -170,13 +172,13 @@ typedef struct initialize_array_node {
 
 typedef struct assign_node {
   variable identifier;
-  expr_node expr;
+  expr_node *expr;
 } assign_node;
 
 typedef struct assign_to_array_subscript_node {
   variable var;
   expr_node *index_expr;
-  expr_node expr_to_assign;
+  expr_node *expr_to_assign;
 } assign_to_array_subscript_node;
 
 typedef enum if_node_kind { IF_SINGLE_INSTR = 0, IF_MULTI_INSTR } if_node_kind;
@@ -265,12 +267,38 @@ typedef struct instr_node {
 } instr_node;
 
 /*
- * @struct program_node: wrapper around a dynamic_array of instructions.
+ * @struct ast: Contains the abstract syntax tree for a compilation unit.
  */
-typedef struct program_node {
+typedef struct ast {
   mem_arena *arena;
   dynamic_array instrs;
   size_t loop_counter;
-} program_node;
+} ast;
+
+/*
+ * @brief: allocates an ast struct.
+ */
+ast *create_ast();
+
+/*
+ * @brief: Frees all memory associated with an ast.
+ *
+ * @param program_ast: pointer to an ast
+ */
+void destroy_ast(ast *program_ast);
+
+/*
+ * @brief: prints all information about a single instruction.
+ *
+ * @param program: pointer to an instruction node
+ */
+void print_instr(instr_node *instr);
+
+/*
+ * @brief: prints all the information about the whole AST (all instructions).
+ *
+ * @param program: pointer to an ast
+ */
+void print_ast(ast *program_ast);
 
 #endif // !AST

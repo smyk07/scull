@@ -6,6 +6,7 @@
 #include "var.h"
 
 #include <stddef.h>
+#include <stdlib.h>
 
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
@@ -230,7 +231,7 @@ static void instr_check_variables(instr_node *instr, ht *variables,
     break;
 
   case INSTR_INITIALIZE:
-    expr_check_variables(&instr->initialize_variable.expr, variables, functions,
+    expr_check_variables(instr->initialize_variable.expr, variables, functions,
                          errors);
     declare_variables(&instr->initialize_variable.var, variables);
     break;
@@ -261,12 +262,12 @@ static void instr_check_variables(instr_node *instr, ht *variables,
     }
     expr_check_variables(instr->assign_to_array_subscript.index_expr, variables,
                          functions, errors);
-    expr_check_variables(&instr->assign_to_array_subscript.expr_to_assign,
+    expr_check_variables(instr->assign_to_array_subscript.expr_to_assign,
                          variables, functions, errors);
     break;
 
   case INSTR_ASSIGN:
-    expr_check_variables(&instr->assign.expr, variables, functions, errors);
+    expr_check_variables(instr->assign.expr, variables, functions, errors);
     break;
 
   case INSTR_IF:
@@ -585,7 +586,7 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
   switch (instr->kind) {
   case INSTR_INITIALIZE: {
     type target_type = instr->initialize_variable.var.type;
-    type expr_result = expr_type(&instr->initialize_variable.expr, target_type,
+    type expr_result = expr_type(instr->initialize_variable.expr, target_type,
                                  variables, functions, errors);
     if (target_type == TYPE_POINTER) {
       return;
@@ -623,7 +624,7 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
   case INSTR_ASSIGN: {
     type target_type =
         get_var_type(variables, &instr->assign.identifier, errors);
-    type expr_result = expr_type(&instr->assign.expr, target_type, variables,
+    type expr_result = expr_type(instr->assign.expr, target_type, variables,
                                  functions, errors);
     if (target_type == TYPE_POINTER) {
       return;
@@ -650,7 +651,7 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
     }
 
     type expr_result =
-        expr_type(&instr->assign_to_array_subscript.expr_to_assign, array_type,
+        expr_type(instr->assign_to_array_subscript.expr_to_assign, array_type,
                   variables, functions, errors);
     if (array_type != expr_result && array_type != TYPE_POINTER) {
       const char *array_type_str = type_to_str(array_type);
@@ -838,10 +839,6 @@ static void register_function_parameters(fn_node *fn) {
     dynamic_array_get(&fn->parameters, i, &param);
     param.stack_offset = i;
     dynamic_array_set(&fn->parameters, i, &param);
-
-    variable *param_copy = scu_checked_malloc(sizeof(variable));
-    memcpy(param_copy, &param, sizeof(variable));
-    param_copy->stack_offset = i;
 
     ht_insert(fn->defined.variables, param.name, &param);
   }

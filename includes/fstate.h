@@ -40,7 +40,7 @@ typedef struct fstate {
    */
   dynamic_array *tokens;
   parser *parser;
-  program_node *program;
+  ast *program_ast;
   ht *variables;
   stack *loops;
   ht *functions;

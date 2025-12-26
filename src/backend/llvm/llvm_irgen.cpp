@@ -2,7 +2,6 @@
 
 extern "C" {
 #include "ds/dynamic_array.h"
-#include "parser.h"
 #include "utils.h"
 #include "var.h"
 }
@@ -310,7 +309,7 @@ static void llvm_irgen_instr_initialize(llvm_backend_ctx &ctx,
 
   named_values[var->name] = alloca;
 
-  llvm::Value *init_value = llvm_irgen_expr(ctx, &init_var->expr);
+  llvm::Value *init_value = llvm_irgen_expr(ctx, init_var->expr);
 
   if (!init_value) {
     scu_perror(NULL,
@@ -439,7 +438,7 @@ static void llvm_irgen_instr_assign(llvm_backend_ctx &ctx,
 
   llvm::AllocaInst *var_alloca = it->second;
 
-  llvm::Value *expr_val = llvm_irgen_expr(ctx, &assign->expr);
+  llvm::Value *expr_val = llvm_irgen_expr(ctx, assign->expr);
   if (!expr_val) {
     scu_perror(NULL,
                const_cast<char *>(
@@ -491,7 +490,7 @@ static void llvm_irgen_instr_assign_to_array_subscript(
         ctx.builder->CreateGEP(elem_type, array_alloca, index_val, "elem_ptr");
   }
 
-  llvm::Value *rhs_val = llvm_irgen_expr(ctx, &assign->expr_to_assign);
+  llvm::Value *rhs_val = llvm_irgen_expr(ctx, assign->expr_to_assign);
   if (!rhs_val) {
     scu_perror(NULL, const_cast<char *>("Failed to evaluate RHS\n"));
     return;

@@ -51,9 +51,9 @@ void llvm_backend_init(cstate *cst, fstate *fst) {
 }
 
 void llvm_backend_compile(cstate *, fstate *fst) {
-  for (size_t i = 0; i < fst->program->instrs.count; i++) {
+  for (size_t i = 0; i < fst->program_ast->instrs.count; i++) {
     instr_node instr;
-    dynamic_array_get(&fst->program->instrs, i, &instr);
+    dynamic_array_get(&fst->program_ast->instrs, i, &instr);
 
     llvm_irgen_instr(bctx, &instr);
   }

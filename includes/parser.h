@@ -35,37 +35,6 @@ void parser_init(dynamic_array *tokens, parser *p);
  * @param errors: error counter variable to be incremented whenever an error is
  * encountered.
  */
-void parser_parse_program(parser *p, program_node *program,
-                          unsigned int *errors);
-
-/*
- * @brief: prints the whole AST (all instructions).
- *
- * @param program: pointer to a program_node (empty dynamic_array of
- * instructions).
- */
-void parser_print_program(program_node *program);
-
-/*
- * @brief: free / destroy if instructions before termination. This function is
- * needed due to there being malloc'd instructions inside those instructions.
- *
- * @param program: pointer to a program_node (empty dynamic_array of
- * instructions).
- */
-void free_if_instrs(program_node *program);
-
-/*
- * @brief: free / destroy allocated instructions inside individual loop
- * instructions.
- *
- * @param program: pointer to a program_node (empty dynamic_array of
- * instructions).
- */
-void free_loops(program_node *program);
-
-void free_fns(program_node *program);
-
-void print_instr(instr_node *instr);
+void parser_parse_program(parser *p, ast *program, unsigned int *errors);
 
 #endif
