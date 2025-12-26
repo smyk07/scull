@@ -75,11 +75,6 @@ typedef struct cstate {
    * Options for the compilation process.
    */
   coptions options;
-
-  /*
-   * Main error count for the whole compilation process.
-   */
-  unsigned int error_count;
 } cstate;
 
 /*
