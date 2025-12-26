@@ -17,10 +17,12 @@
 - [x] NEC Parser bug fixes and proper memory management
 
 - [ ] NEC Arenas / Allocators (for the full compiler) instead of the current allocation method
+  - [ ] Better arena implementation with chaining
 
 - [ ] NEC only emit the output file in current directory unless specified, else use `/tmp`
 
 - [ ] NEC Develop C Backend
+  - Language related changes which would facilitate 1:1 C translation are needed (basic types, structs, unions, enums, memory management, etc)
 
 - [ ] NEC Test cases
 
@@ -34,7 +36,25 @@
 
 - [x] NEC Strings
 
+- [ ] NEC For loop
+
+- [ ] NEC proper control flow (else, switch)
+
+- [ ] NEC Structs, Unions, Enums
+
+- [ ] NEC Some alternative for sizeof()
+
+- [ ] NEC Operators: Logical, Bitwise, Assignment, Ternary
+
+- [ ] NEC Macros
+
 - [ ] NEC io.scl refresh using functions
+
+- [ ] NEC Either Static variables and functions, or implementation blocks (pref)
+
+- [ ] NEC Multi-dimensional arrays
+
+- [ ] NEC Start work on the standard library
 
 - [ ] EXP Modular / Constraints in type system (runtime overhead)
 
