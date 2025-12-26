@@ -14,12 +14,13 @@
 
 - [x] NEC -S cli flag and --emit-llvm flag, and general CLI improvements
 
+- [x] NEC Parser bug fixes and proper memory management
+
+- [ ] NEC Arenas / Allocators (for the full compiler) instead of the current allocation method
+
 - [ ] NEC only emit the output file in current directory unless specified, else use `/tmp`
 
 - [ ] NEC Develop C Backend
-
-- [ ] NEC Arenas / Allocators instead of the current allocation method
-  - <https://arjunsreedharan.org/post/148675821737/memory-allocators-101-write-a-simple-memory>
 
 - [ ] NEC Test cases
 
@@ -30,8 +31,6 @@
   - Native scull binary available
 
 ## Language Related
-
-- [ ] NEC Parser bug fixes and proper memory management
 
 - [x] NEC Strings
 
