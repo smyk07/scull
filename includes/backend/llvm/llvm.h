@@ -1,3 +1,7 @@
+/*
+ * llvm: LLVM Backend for code generation
+ */
+
 #ifndef LLVM_H
 #define LLVM_H
 
@@ -8,12 +12,37 @@ extern "C" {
 #include "cstate.h"
 #include "fstate.h"
 
+/*
+ * @brief: Initializes the LLVM backend for compilation.
+ *
+ * @param cst: Pointer to compiler state containing global compilation context
+ * @param fst: Pointer to file state containing the parsed program
+ */
 void llvm_backend_init(cstate *cst, fstate *fst);
 
+/*
+ * @brief: Compiles the parsed program to LLVM IR.
+ *
+ * @param cst: Pointer to compiler state containing global compilation context
+ * @param fst: Pointer to file state containing the parsed program and artifacts
+ */
 void llvm_backend_compile(cstate *cst, fstate *fst);
 
+/*
+ * @brief: Emits the compiled LLVM IR to the requested format (default is a
+ * linkable output file).
+ *
+ * @param cst: Pointer to compiler state containing global compilation context
+ * @param fst: Pointer to file state containing the compiled IR
+ */
 void llvm_backend_emit(cstate *cst, fstate *fst);
 
+/*
+ * @brief: Cleans up LLVM backend resources and frees associated memory.
+ *
+ * @param cst: Pointer to compiler state containing global compilation context
+ * @param fst: Pointer to file state containing LLVM backend artifacts
+ */
 void llvm_backend_cleanup(cstate *cst, fstate *fst);
 
 #ifdef __cplusplus

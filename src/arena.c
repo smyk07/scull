@@ -16,7 +16,7 @@ struct mem_arena {
 #define ARENA_ALIGN (sizeof(void *))
 
 mem_arena *arena_create(uint64_t capacity) {
-  mem_arena *arena = (mem_arena *)malloc(ARENA_BASE_POS + capacity);
+  mem_arena *arena = (mem_arena *)scu_checked_malloc(ARENA_BASE_POS + capacity);
   arena->capacity = capacity;
   arena->pos = ARENA_BASE_POS;
   return arena;

@@ -1462,10 +1462,21 @@ void parser_print_program(program_node *program) {
   }
 }
 
+static void free_fn_calls(program_node *program);
+
+static void free_ret_node(program_node *program);
+
 void free_if_instrs(program_node *program) {
   for (unsigned int i = 0; i < program->instrs.count; i++) {
     instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
-    dynamic_array_free(&instr->if_.instrs);
+    if (instr->kind == INSTR_IF && instr->if_.kind == IF_MULTI_INSTR) {
+      program_node temp = {NULL, instr->if_.instrs, 0};
+      free_if_instrs(&temp);
+      free_fn_calls(&temp);
+      free_loops(&temp);
+      free_ret_node(&temp);
+      dynamic_array_free(&instr->if_.instrs);
+    }
   }
 }
 
@@ -1475,7 +1486,9 @@ void free_loops(program_node *program) {
     if (instr->kind == INSTR_LOOP) {
       program_node temp = {NULL, instr->loop.instrs, 0};
       free_if_instrs(&temp);
+      free_fn_calls(&temp);
       free_loops(&temp);
+      free_ret_node(&temp);
       dynamic_array_free(&instr->loop.instrs);
     }
   }
@@ -1512,8 +1525,8 @@ void free_fns(program_node *program) {
         program_node temp = {NULL, instr->fn_define_node.defined.instrs, 0};
 
         free_if_instrs(&temp);
-        free_loops(&temp);
         free_fn_calls(&temp);
+        free_loops(&temp);
         free_ret_node(&temp);
 
         dynamic_array_free(&temp.instrs);

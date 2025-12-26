@@ -1,3 +1,7 @@
+/*
+ * llvm_irgen: LLVM IR Generation from the generated AST.
+ */
+
 #ifndef LLVM_IRGEN_H
 #define LLVM_IRGEN_H
 
@@ -9,6 +13,9 @@ extern "C" {
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/Target/TargetMachine.h>
 
+/*
+ * @struct llvm_backend_ctx: LLVM backend context containing IR generation state
+ */
 typedef struct llvm_backend_ctx {
   llvm::LLVMContext *context;
   llvm::Module *module;
@@ -17,8 +24,17 @@ typedef struct llvm_backend_ctx {
   std::string target_triple;
 } llvm_backend_ctx;
 
+/*
+ * @brief: Clears the symbol table used during IR generation.
+ */
 void llvm_irgen_clear_symbol_table();
 
+/*
+ * @brief: Generates LLVM IR for a single instruction node.
+ *
+ * @param ctx: Reference to LLVM backend context
+ * @param instr: Pointer to the instruction node to generate IR for
+ */
 void llvm_irgen_instr(llvm_backend_ctx &ctx, instr_node *instr);
 
 #endif // !LLVM_IRGEN_H
