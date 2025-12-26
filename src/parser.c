@@ -1,4 +1,5 @@
 #include "parser.h"
+#include "arena.h"
 #include "ast.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
@@ -11,6 +12,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+
+static mem_arena *parser_arena;
 
 void parser_init(dynamic_array *tokens, parser *p) {
   p->tokens = *tokens;
@@ -100,7 +103,6 @@ static void parse_term_for_expr(parser *p, term_node *term,
       while (token.kind != TOKEN_RPAREN) {
         expr_node *arg = parse_expr(p, errors);
         dynamic_array_append(&term->fn_call.parameters, arg);
-        free(arg);
 
         parser_current(p, &token, errors);
         if (token.kind == TOKEN_COMMA) {
@@ -145,7 +147,7 @@ static expr_node *parse_factor(parser *p, unsigned int *errors) {
   if (token.kind == TOKEN_INT || token.kind == TOKEN_CHAR ||
       token.kind == TOKEN_IDENTIFIER || token.kind == TOKEN_POINTER ||
       token.kind == TOKEN_STRING || token.kind == TOKEN_ADDRESS_OF) {
-    expr_node *node = scu_checked_malloc(sizeof(expr_node));
+    expr_node *node = arena_push_struct(parser_arena, expr_node);
     node->kind = EXPR_TERM;
     node->line = token.line;
 
@@ -192,7 +194,6 @@ static expr_node *parse_factor(parser *p, unsigned int *errors) {
         while (token.kind != TOKEN_RPAREN) {
           expr_node *arg = parse_expr(p, errors);
           dynamic_array_append(&node->term.fn_call.parameters, arg);
-          free(arg);
 
           parser_current(p, &token, errors);
           if (token.kind == TOKEN_COMMA) {
@@ -253,7 +254,7 @@ static expr_node *parse_term(parser *p, unsigned int *errors) {
       parser_advance(p);
       expr_node *right = parse_factor(p, errors);
 
-      expr_node *parent = scu_checked_malloc(sizeof(expr_node));
+      expr_node *parent = arena_push_struct(parser_arena, expr_node);
 
       parent->line = token.line;
 
@@ -290,7 +291,7 @@ static expr_node *parse_expr(parser *p, unsigned int *errors) {
       parser_advance(p);
       expr_node *right = parse_term(p, errors);
 
-      expr_node *parent = scu_checked_malloc(sizeof(expr_node));
+      expr_node *parent = arena_push_struct(parser_arena, expr_node);
       parent->kind = (token.kind == TOKEN_ADD) ? EXPR_ADD : EXPR_SUBTRACT;
       parent->line = token.line;
       parent->binary.left = left;
@@ -374,7 +375,6 @@ static void parse_initialize(parser *p, instr_node *instr, type _type,
 
   expr_node *expr = parse_expr(p, errors);
   instr->initialize_variable.expr = *expr;
-  free(expr);
 }
 
 /*
@@ -499,8 +499,6 @@ static void parse_declare(parser *p, instr_node *instr, unsigned int *errors) {
   }
 }
 
-static void free_expr_children(expr_node *expr);
-
 /*
  * @brief: parse a function call.
  *
@@ -532,8 +530,6 @@ static void parse_fn_call(parser *p, instr_node *instr, unsigned int *errors) {
   while (token.kind != TOKEN_RPAREN) {
     expr_node *arg = parse_expr(p, errors);
     dynamic_array_append(&instr->fn_call.parameters, arg);
-    free_expr_children(arg);
-    free(arg);
 
     parser_current(p, &token, errors);
     if (token.kind == TOKEN_COMMA) {
@@ -599,7 +595,6 @@ static void parse_assign(parser *p, instr_node *instr, unsigned int *errors) {
 
     expr_node *expr = parse_expr(p, errors);
     instr->assign_to_array_subscript.expr_to_assign = *expr;
-    free(expr);
   } else if (token.kind == TOKEN_LPAREN) {
     p->index--;
     parse_fn_call(p, instr, errors);
@@ -616,7 +611,6 @@ static void parse_assign(parser *p, instr_node *instr, unsigned int *errors) {
 
     expr_node *expr = parse_expr(p, errors);
     instr->assign.expr = *expr;
-    free(expr);
   }
 }
 
@@ -644,7 +638,7 @@ static void parse_if(parser *p, instr_node *instr, size_t *loop_counter,
     instr->if_.kind = IF_SINGLE_INSTR;
     parser_advance(p);
 
-    instr->if_.instr = scu_checked_malloc(sizeof(instr_node));
+    instr->if_.instr = arena_push_struct(parser_arena, instr_node);
     parse_instr(p, instr->if_.instr, loop_counter, errors);
   } else if (token.kind == TOKEN_LBRACE) {
     instr->if_.kind = IF_MULTI_INSTR;
@@ -654,7 +648,7 @@ static void parse_if(parser *p, instr_node *instr, size_t *loop_counter,
 
     parser_current(p, &token, errors);
     while (token.kind != TOKEN_RBRACE && token.kind != TOKEN_END) {
-      instr_node *new_instr = scu_checked_malloc(sizeof(instr_node));
+      instr_node *new_instr = arena_push_struct(parser_arena, instr_node);
       parse_instr(p, new_instr, loop_counter, errors);
       dynamic_array_append(&instr->if_.instrs, new_instr);
 
@@ -758,10 +752,10 @@ static void parse_loop(parser *p, instr_node *instr, loop_kind kind,
       parser_current(p, &token, errors);
       continue;
     }
-    instr_node *_instr = scu_checked_malloc(sizeof(instr_node));
+    instr_node *_instr = arena_push_struct(parser_arena, instr_node);
+
     parse_instr(p, _instr, loop_counter, errors);
     dynamic_array_append(&instr->loop.instrs, _instr);
-    free(_instr);
     parser_current(p, &token, errors);
   }
 
@@ -891,10 +885,9 @@ static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter,
       parser_current(p, &token, errors);
       if (token.kind == TOKEN_RBRACE)
         break;
-      instr_node *_instr = scu_checked_malloc(sizeof(instr_node));
+      instr_node *_instr = arena_push_struct(parser_arena, instr_node);
       parse_instr(p, _instr, loop_counter, errors);
       dynamic_array_append(&instr->fn_define_node.defined.instrs, _instr);
-      free(_instr);
     }
     parser_advance(p);
   }
@@ -921,8 +914,6 @@ static void parse_ret(parser *p, instr_node *instr, unsigned int *errors) {
   while (token.kind != TOKEN_RBRACE) {
     expr_node *expr = parse_expr(p, errors);
     dynamic_array_append(&instr->ret_node.returnvals, expr);
-    free_expr_children(expr);
-    free(expr);
 
     parser_current(p, &token, errors);
 
@@ -1003,7 +994,7 @@ static void parse_instr(parser *p, instr_node *instr, size_t *loop_counter,
 
 void parser_parse_program(parser *p, program_node *program,
                           unsigned int *errors) {
-  dynamic_array_init(&program->instrs, sizeof(instr_node));
+  parser_arena = program->arena;
 
   token token = {0};
   parser_current(p, &token, errors);
@@ -1014,15 +1005,14 @@ void parser_parse_program(parser *p, program_node *program,
       parser_current(p, &token, errors);
       continue;
     }
-    instr_node *instr = scu_checked_malloc(sizeof(instr_node));
+    instr_node *instr = arena_push_struct(parser_arena, instr_node);
     parse_instr(p, instr, &program->loop_counter, errors);
     scu_check_errors(errors);
     dynamic_array_append(&program->instrs, instr);
-    free(instr);
     parser_current(p, &token, errors);
   }
 
-  scu_check_errors(errors);
+  parser_arena = NULL;
 }
 
 /*
@@ -1475,62 +1465,7 @@ void parser_print_program(program_node *program) {
 void free_if_instrs(program_node *program) {
   for (unsigned int i = 0; i < program->instrs.count; i++) {
     instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
-    if (instr->kind == INSTR_IF) {
-      free(instr->if_.instr);
-    } else {
-      dynamic_array_free(&instr->if_.instrs);
-    }
-  }
-}
-
-/*
- * @brief: frees an expression object recursively.
- *
- * @param expr: pointer to an expression node.
- */
-static void free_expr_obj(expr_node *expr) {
-  switch (expr->kind) {
-  case EXPR_ADD:
-  case EXPR_SUBTRACT:
-  case EXPR_MULTIPLY:
-  case EXPR_DIVIDE:
-  case EXPR_MODULO:
-    free_expr_obj(expr->binary.left);
-    free_expr_obj(expr->binary.right);
-  case EXPR_TERM:
-    free(expr);
-    break;
-  }
-}
-
-/*
- * @brief: frees the expression inside individual expressions.
- *
- * @param expr: pointer to an expression node.
- */
-static void free_expr_children(expr_node *expr) {
-  switch (expr->kind) {
-  case EXPR_TERM:
-    break;
-  case EXPR_ADD:
-  case EXPR_SUBTRACT:
-  case EXPR_MULTIPLY:
-  case EXPR_DIVIDE:
-  case EXPR_MODULO:
-    free_expr_obj(expr->binary.left);
-    free_expr_obj(expr->binary.right);
-    break;
-  }
-}
-
-void free_expressions(program_node *program) {
-  for (unsigned int i = 0; i < program->instrs.count; i++) {
-    instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
-    if (instr->kind == INSTR_ASSIGN) {
-      free_expr_children(&instr->assign.expr);
-    } else if (instr->kind == INSTR_INITIALIZE) {
-      free_expr_children(&instr->initialize_variable.expr);
-    }
+    dynamic_array_free(&instr->if_.instrs);
   }
 }
 
@@ -1538,9 +1473,8 @@ void free_loops(program_node *program) {
   for (unsigned int i = 0; i < program->instrs.count; i++) {
     instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
     if (instr->kind == INSTR_LOOP) {
-      program_node temp = {0, instr->loop.instrs};
+      program_node temp = {NULL, instr->loop.instrs, 0};
       free_if_instrs(&temp);
-      free_expressions(&temp);
       free_loops(&temp);
       dynamic_array_free(&instr->loop.instrs);
     }
@@ -1551,11 +1485,6 @@ static void free_fn_calls(program_node *program) {
   for (unsigned int i = 0; i < program->instrs.count; i++) {
     instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
     if (instr->kind == INSTR_FN_CALL) {
-      for (unsigned int j = 0; j < instr->fn_call.parameters.count; j++) {
-        expr_node *expr = instr->fn_call.parameters.items +
-                          (j * instr->fn_call.parameters.item_size);
-        free_expr_children(expr);
-      }
       dynamic_array_free(&instr->fn_call.parameters);
     }
   }
@@ -1565,11 +1494,6 @@ static void free_ret_node(program_node *program) {
   for (unsigned int i = 0; i < program->instrs.count; i++) {
     instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
     if (instr->kind == INSTR_RETURN) {
-      for (unsigned int j = 0; j < instr->ret_node.returnvals.count; j++) {
-        expr_node *expr = instr->ret_node.returnvals.items +
-                          (j * instr->ret_node.returnvals.item_size);
-        free_expr_children(expr);
-      }
       dynamic_array_free(&instr->ret_node.returnvals);
     }
   }
@@ -1585,10 +1509,9 @@ void free_fns(program_node *program) {
       if (instr->kind == INSTR_FN_DEFINE) {
         ht_del_ht(instr->fn_define_node.defined.variables);
 
-        program_node temp = {0, instr->fn_define_node.defined.instrs};
+        program_node temp = {NULL, instr->fn_define_node.defined.instrs, 0};
 
         free_if_instrs(&temp);
-        free_expressions(&temp);
         free_loops(&temp);
         free_fn_calls(&temp);
         free_ret_node(&temp);

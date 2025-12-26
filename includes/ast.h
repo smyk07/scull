@@ -5,6 +5,7 @@
 #ifndef AST
 #define AST
 
+#include "arena.h"
 #include "ds/dynamic_array.h"
 #include "token.h"
 #include "var.h"
@@ -267,8 +268,9 @@ typedef struct instr_node {
  * @struct program_node: wrapper around a dynamic_array of instructions.
  */
 typedef struct program_node {
-  size_t loop_counter;
+  mem_arena *arena;
   dynamic_array instrs;
+  size_t loop_counter;
 } program_node;
 
 #endif // !AST

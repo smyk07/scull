@@ -1,7 +1,6 @@
 #include "backend/llvm/llvm_irgen.hpp"
 
 extern "C" {
-#include "ast.h"
 #include "ds/dynamic_array.h"
 #include "parser.h"
 #include "utils.h"

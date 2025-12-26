@@ -56,15 +56,6 @@ void parser_print_program(program_node *program);
 void free_if_instrs(program_node *program);
 
 /*
- * @brief: free / destroy assign and initialize instructions due to there being
- * malloc'd expressions inside those instructions.
- *
- * @param program: pointer to a program_node (empty dynamic_array of
- * instructions).
- */
-void free_expressions(program_node *program);
-
-/*
  * @brief: free / destroy allocated instructions inside individual loop
  * instructions.
  *

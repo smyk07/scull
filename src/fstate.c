@@ -1,7 +1,11 @@
 #include "fstate.h"
+#include "arena.h"
+#include "ast.h"
+#include "ds/dynamic_array.h"
 #include "lexer.h"
 #include "parser.h"
 #include "utils.h"
+
 #include <stdlib.h>
 #include <string.h>
 
@@ -24,6 +28,8 @@ fstate *create_new_fstate(const char *filepath) {
   fst->parser = scu_checked_malloc(sizeof(parser));
 
   fst->program = scu_checked_malloc(sizeof(program_node));
+  fst->program->arena = arena_create(4 << 20); // allocate 4 megabytes for now
+  dynamic_array_init(&fst->program->instrs, sizeof(instr_node));
   fst->program->loop_counter = 0;
 
   fst->loops = scu_checked_malloc(sizeof(stack));
@@ -47,10 +53,10 @@ void free_fstate(fstate *fst) {
   free(fst->parser);
 
   free_if_instrs(fst->program);
-  free_expressions(fst->program);
   free_loops(fst->program);
   free_fns(fst->program);
   dynamic_array_free(&fst->program->instrs);
+  arena_destroy(fst->program->arena);
   free(fst->program);
 
   stack_free(fst->loops);
