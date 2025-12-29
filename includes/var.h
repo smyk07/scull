@@ -48,12 +48,10 @@ int get_type_size(type t);
  * @param variables: pointer to hash table of variables.
  * @param var_to_find: pointer to a variable struct which we intend to find in
  * the dynamic_array.
- * @param errors: counter variable to increment when an error is encountered.
  *
  * @return: int
  */
-size_t get_var_stack_offset(ht *variables, variable *var_to_find,
-                            unsigned int *errors);
+size_t get_var_stack_offset(ht *variables, variable *var_to_find);
 
 /*
  * @brief: check for a variable's type by its name / identifier and line data.
@@ -61,10 +59,9 @@ size_t get_var_stack_offset(ht *variables, variable *var_to_find,
  * @param variables: pointer to hash table of variable.
  * @param var_to_find: pointer to a variable struct which we intend to find in
  * the dynamic_array.
- * @param errors: counter variable to increment when an error is encountered.
  *
  * @return: data type of the variable (enumeration)
  */
-type get_var_type(ht *variables, variable *var_to_find, unsigned int *errors);
+type get_var_type(ht *variables, variable *var_to_find);
 
 #endif // !VARE

@@ -32,9 +32,7 @@ void parser_init(dynamic_array *tokens, parser *p);
  * @param p: pointer to an uninitialized parser struct.
  * @param program: pointer to a program_node (empty dynamic_array of
  * instructions).
- * @param errors: error counter variable to be incremented whenever an error is
- * encountered.
  */
-void parser_parse_program(parser *p, ast *program, unsigned int *errors);
+void parser_parse_program(parser *p, ast *program);
 
 #endif

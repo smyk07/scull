@@ -67,7 +67,7 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
 
   if (llvm::verifyModule(*bctx.module, &error_stream)) {
     error_stream.flush();
-    scu_perror(NULL, const_cast<char *>("Module verification failed: %s\n"),
+    scu_perror(const_cast<char *>("Module verification failed: %s\n"),
                error_str.c_str());
     return;
   }
@@ -92,7 +92,7 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
       llvm::TargetRegistry::lookupTarget(bctx.target_triple, error);
 
   if (!target) {
-    scu_perror(NULL, const_cast<char *>("Failed to look up target: %s\n"),
+    scu_perror(const_cast<char *>("Failed to look up target: %s\n"),
                error.c_str());
     return;
   }
@@ -105,7 +105,7 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
                                   "", opt, RM, llvm::CodeModel::Small);
 
   if (!bctx.target_machine) {
-    scu_perror(NULL, const_cast<char *>("Failed to create target machine\n"));
+    scu_perror(const_cast<char *>("Failed to create target machine\n"));
     return;
   }
 
@@ -137,7 +137,7 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
   llvm::raw_fd_ostream dest(obj_filename, ec, llvm::sys::fs::OF_None);
 
   if (ec) {
-    scu_perror(NULL, const_cast<char *>("Could not open output file: %s\n"),
+    scu_perror(const_cast<char *>("Could not open output file: %s\n"),
                ec.message().c_str());
     return;
   }
@@ -146,8 +146,7 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
 
   if (bctx.target_machine->addPassesToEmitFile(
           pass, dest, nullptr, llvm::CodeGenFileType::ObjectFile)) {
-    scu_perror(NULL,
-               const_cast<char *>("TargetMachine can't emit object file\n"));
+    scu_perror(const_cast<char *>("TargetMachine can't emit object file\n"));
     return;
   }
 

@@ -71,7 +71,7 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
   case TERM_IDENTIFIER: {
     auto it = named_values.find(term->identifier.name);
     if (it == named_values.end()) {
-      scu_perror(NULL, const_cast<char *>("Unknown variable '%s' at line %zu"),
+      scu_perror(const_cast<char *>("Unknown variable '%s' at line %zu"),
                  term->identifier.name, term->line);
       return nullptr;
     }
@@ -86,7 +86,7 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
 
     llvm::Function *callee = ctx.module->getFunction(call->name);
     if (!callee) {
-      scu_perror(NULL, const_cast<char *>("Unknown function '%s' at line %zu"),
+      scu_perror(const_cast<char *>("Unknown function '%s' at line %zu"),
                  call->name, term->line);
       return nullptr;
     }
@@ -109,7 +109,7 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
     auto it = named_values.find(term->identifier.name);
     if (it == named_values.end()) {
       scu_perror(
-          NULL, const_cast<char *>("Unknown pointer variable '%s' at line %zu"),
+          const_cast<char *>("Unknown pointer variable '%s' at line %zu"),
           term->identifier.name, term->line);
       return nullptr;
     }
@@ -126,7 +126,7 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
   case TERM_ADDOF: {
     auto it = named_values.find(term->identifier.name);
     if (it == named_values.end()) {
-      scu_perror(NULL, const_cast<char *>("Unknown variable '%s' at line %zu"),
+      scu_perror(const_cast<char *>("Unknown variable '%s' at line %zu"),
                  term->identifier.name, term->line);
       return nullptr;
     }
@@ -139,7 +139,7 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
 
     auto it = named_values.find(access->array_var.name);
     if (it == named_values.end()) {
-      scu_perror(NULL, const_cast<char *>("Unknown array '%s' at line %zu"),
+      scu_perror(const_cast<char *>("Unknown array '%s' at line %zu"),
                  access->array_var.name, term->line);
       return nullptr;
     }
@@ -174,15 +174,14 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
   }
 
   case TERM_ARRAY_LITERAL: {
-    scu_perror(NULL,
-               const_cast<char *>(
+    scu_perror(const_cast<char *>(
                    "Array literal only valid in initialization at line %zu"),
                term->line);
     return nullptr;
   }
 
   default:
-    scu_perror(NULL, const_cast<char *>("Unknown term kind %d at line %zu"),
+    scu_perror(const_cast<char *>("Unknown term kind %d at line %zu"),
                term->kind, term->line);
     return nullptr;
   }
@@ -271,8 +270,7 @@ static void llvm_irgen_instr_declare(llvm_backend_ctx &ctx, variable *var) {
   llvm::Function *fn = ctx.builder->GetInsertBlock()->getParent();
 
   if (!fn) {
-    scu_perror(NULL,
-               const_cast<char *>(
+    scu_perror(const_cast<char *>(
                    "Variable declaration '%s' outside function at line %zu\n"),
                var->name, var->line);
     return;
@@ -298,7 +296,7 @@ static void llvm_irgen_instr_initialize(llvm_backend_ctx &ctx,
 
   if (!fn) {
     scu_perror(
-        NULL,
+
         const_cast<char *>(
             "Variable initialization '%s' outside function at line %zu\n"),
         var->name, var->line);
@@ -312,8 +310,7 @@ static void llvm_irgen_instr_initialize(llvm_backend_ctx &ctx,
   llvm::Value *init_value = llvm_irgen_expr(ctx, init_var->expr);
 
   if (!init_value) {
-    scu_perror(NULL,
-               const_cast<char *>("Failed to generate intiialization "
+    scu_perror(const_cast<char *>("Failed to generate intiialization "
                                   "expression for '%s' at line %zu\n"),
                var->name, var->line);
     return;
@@ -332,8 +329,7 @@ static void llvm_irgen_instr_declare_array(llvm_backend_ctx &ctx,
   if (arr->size_expr) {
     size_val = llvm_irgen_expr(ctx, arr->size_expr);
     if (!size_val) {
-      scu_perror(NULL,
-                 const_cast<char *>(
+      scu_perror(const_cast<char *>(
                      "Failed to evaluate array size for '%s' at line %zu\n"),
                  var->name, var->line);
       return;
@@ -342,8 +338,7 @@ static void llvm_irgen_instr_declare_array(llvm_backend_ctx &ctx,
 
   llvm::Function *fn = ctx.builder->GetInsertBlock()->getParent();
   if (!fn) {
-    scu_perror(NULL,
-               const_cast<char *>(
+    scu_perror(const_cast<char *>(
                    "Array declaration '%s' outside function at line %zu\n"),
                var->name, var->line);
     return;
@@ -363,8 +358,7 @@ static void llvm_irgen_instr_declare_array(llvm_backend_ctx &ctx,
   }
 
   if (!alloca) {
-    scu_perror(NULL,
-               const_cast<char *>(
+    scu_perror(const_cast<char *>(
                    "Failed to create array alloca for '%s' at line %zu\n"),
                var->name, var->line);
     return;
@@ -381,8 +375,7 @@ static void llvm_irgen_initialize_array(llvm_backend_ctx &ctx,
 
   llvm::Function *fn = ctx.builder->GetInsertBlock()->getParent();
   if (!fn) {
-    scu_perror(NULL,
-               const_cast<char *>(
+    scu_perror(const_cast<char *>(
                    "Array initialization '%s' outside function at line %zu\n"),
                var->name, var->line);
     return;
@@ -392,8 +385,7 @@ static void llvm_irgen_initialize_array(llvm_backend_ctx &ctx,
   if (arr->size_expr) {
     size_val = llvm_irgen_expr(ctx, arr->size_expr);
     if (!size_val) {
-      scu_perror(NULL,
-                 const_cast<char *>("Failed to evaluate array size for '%s'\n"),
+      scu_perror(const_cast<char *>("Failed to evaluate array size for '%s'\n"),
                  var->name);
       return;
     }
@@ -430,8 +422,7 @@ static void llvm_irgen_instr_assign(llvm_backend_ctx &ctx,
                                     assign_node *assign) {
   auto it = named_values.find(assign->identifier.name);
   if (it == named_values.end()) {
-    scu_perror(NULL,
-               const_cast<char *>("Unknown variable '%s' in assignment\n"),
+    scu_perror(const_cast<char *>("Unknown variable '%s' in assignment\n"),
                assign->identifier.name);
     return;
   }
@@ -440,8 +431,7 @@ static void llvm_irgen_instr_assign(llvm_backend_ctx &ctx,
 
   llvm::Value *expr_val = llvm_irgen_expr(ctx, assign->expr);
   if (!expr_val) {
-    scu_perror(NULL,
-               const_cast<char *>(
+    scu_perror(const_cast<char *>(
                    "Failed to evaluate expression in assignment to '%s'\n"),
                assign->identifier.name);
     return;
@@ -456,8 +446,7 @@ static void llvm_irgen_instr_assign_to_array_subscript(
 
   auto it = named_values.find(var->name);
   if (it == named_values.end()) {
-    scu_perror(NULL, const_cast<char *>("Unknown array variable '%s'\n"),
-               var->name);
+    scu_perror(const_cast<char *>("Unknown array variable '%s'\n"), var->name);
     return;
   }
 
@@ -466,8 +455,7 @@ static void llvm_irgen_instr_assign_to_array_subscript(
 
   llvm::Value *index_val = llvm_irgen_expr(ctx, assign->index_expr);
   if (!index_val) {
-    scu_perror(NULL,
-               const_cast<char *>("Failed to evaluate index expression\n"));
+    scu_perror(const_cast<char *>("Failed to evaluate index expression\n"));
     return;
   }
 
@@ -492,7 +480,7 @@ static void llvm_irgen_instr_assign_to_array_subscript(
 
   llvm::Value *rhs_val = llvm_irgen_expr(ctx, assign->expr_to_assign);
   if (!rhs_val) {
-    scu_perror(NULL, const_cast<char *>("Failed to evaluate RHS\n"));
+    scu_perror(const_cast<char *>("Failed to evaluate RHS\n"));
     return;
   }
 
@@ -502,13 +490,13 @@ static void llvm_irgen_instr_assign_to_array_subscript(
 static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
   llvm::Function *fn = ctx.builder->GetInsertBlock()->getParent();
   if (!fn) {
-    scu_perror(NULL, const_cast<char *>("If statement outside function\n"));
+    scu_perror(const_cast<char *>("If statement outside function\n"));
     return;
   }
 
   llvm::Value *cond_val = llvm_irgen_relational(ctx, &if_stmt->rel);
   if (!cond_val) {
-    scu_perror(NULL, const_cast<char *>("Failed to generate if condition\n"));
+    scu_perror(const_cast<char *>("Failed to generate if condition\n"));
     return;
   }
 
@@ -542,7 +530,7 @@ static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
 static void llvm_irgen_instr_goto(llvm_backend_ctx &ctx, goto_node *goto_stmt) {
   llvm::Function *fn = ctx.builder->GetInsertBlock()->getParent();
   if (!fn) {
-    scu_perror(NULL, const_cast<char *>("Goto statement outside function\n"));
+    scu_perror(const_cast<char *>("Goto statement outside function\n"));
     return;
   }
 
@@ -559,7 +547,7 @@ static void llvm_irgen_instr_label(llvm_backend_ctx &ctx,
                                    label_node *label_stmt) {
   llvm::Function *fn = ctx.builder->GetInsertBlock()->getParent();
   if (!fn) {
-    scu_perror(NULL, const_cast<char *>("Label outside function\n"));
+    scu_perror(const_cast<char *>("Label outside function\n"));
     return;
   }
 
@@ -582,7 +570,7 @@ static llvm::BasicBlock *current_loop_exit = nullptr;
 static void llvm_irgen_instr_loop(llvm_backend_ctx &ctx, loop_node *loop) {
   llvm::Function *fn = ctx.builder->GetInsertBlock()->getParent();
   if (!fn) {
-    scu_perror(NULL, const_cast<char *>("Loop outside function\n"));
+    scu_perror(const_cast<char *>("Loop outside function\n"));
     return;
   }
 
@@ -612,8 +600,7 @@ static void llvm_irgen_instr_loop(llvm_backend_ctx &ctx, loop_node *loop) {
   case LOOP_WHILE: {
     llvm::Value *cond = llvm_irgen_relational(ctx, &loop->break_condition);
     if (!cond) {
-      scu_perror(NULL,
-                 const_cast<char *>("Failed to generate while condition\n"));
+      scu_perror(const_cast<char *>("Failed to generate while condition\n"));
       current_loop_header = prev_loop_header;
       current_loop_exit = prev_loop_exit;
       return;
@@ -665,7 +652,7 @@ static void llvm_irgen_instr_loop(llvm_backend_ctx &ctx, loop_node *loop) {
 
 static void llvm_irgen_instr_loop_break(llvm_backend_ctx &ctx) {
   if (!current_loop_exit) {
-    scu_perror(NULL, const_cast<char *>("Break statement outside loop\n"));
+    scu_perror(const_cast<char *>("Break statement outside loop\n"));
     return;
   }
 
@@ -674,7 +661,7 @@ static void llvm_irgen_instr_loop_break(llvm_backend_ctx &ctx) {
 
 static void llvm_irgen_instr_loop_continue(llvm_backend_ctx &ctx) {
   if (!current_loop_header) {
-    scu_perror(NULL, const_cast<char *>("Continue statement outside loop\n"));
+    scu_perror(const_cast<char *>("Continue statement outside loop\n"));
     return;
   }
 
@@ -784,8 +771,7 @@ static void llvm_irgen_instr_return(llvm_backend_ctx &ctx, return_node *ret) {
     llvm::Value *ret_val = llvm_irgen_expr(ctx, &ret_expr);
 
     if (!ret_val) {
-      scu_perror(NULL,
-                 const_cast<char *>("Failed to generate return expression\n"));
+      scu_perror(const_cast<char *>("Failed to generate return expression\n"));
       ctx.builder->CreateRetVoid();
       return;
     }
@@ -799,7 +785,7 @@ static void llvm_irgen_instr_fn_call(llvm_backend_ctx &ctx,
   llvm::Function *callee = ctx.module->getFunction(call->name);
 
   if (!callee) {
-    scu_perror(NULL, const_cast<char *>("Unknown function '%s' in call\n"),
+    scu_perror(const_cast<char *>("Unknown function '%s' in call\n"),
                call->name);
     return;
   }
@@ -812,8 +798,7 @@ static void llvm_irgen_instr_fn_call(llvm_backend_ctx &ctx,
     llvm::Value *arg_val = llvm_irgen_expr(ctx, &arg_expr);
 
     if (!arg_val) {
-      scu_perror(NULL,
-                 const_cast<char *>(
+      scu_perror(const_cast<char *>(
                      "Failed to evaluate argument %zu in call to '%s'\n"),
                  i, call->name);
       return;
@@ -893,7 +878,7 @@ void llvm_irgen_instr(llvm_backend_ctx &ctx, instr_node *instr) {
     break;
 
   default:
-    scu_perror(NULL, const_cast<char *>("Unexpected instr type: %s"));
+    scu_perror(const_cast<char *>("Unexpected instr type: %s"));
     print_instr(instr);
     break;
   }

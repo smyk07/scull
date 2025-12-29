@@ -11,7 +11,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
 
-int evaluate_const_expr(expr_node *expr, unsigned int *errors) {
+int evaluate_const_expr(expr_node *expr) {
   if (expr == NULL) {
     return 0;
   }
@@ -21,37 +21,37 @@ int evaluate_const_expr(expr_node *expr, unsigned int *errors) {
     if (expr->term.kind == TERM_INT) {
       return expr->term.value.integer;
     }
-    scu_perror(errors, "Array size must be a constant expression\n");
+    scu_perror("Array size must be a constant expression\n");
     return 0;
 
   case EXPR_ADD:
-    return evaluate_const_expr(expr->binary.left, errors) +
-           evaluate_const_expr(expr->binary.right, errors);
+    return evaluate_const_expr(expr->binary.left) +
+           evaluate_const_expr(expr->binary.right);
 
   case EXPR_SUBTRACT:
-    return evaluate_const_expr(expr->binary.left, errors) -
-           evaluate_const_expr(expr->binary.right, errors);
+    return evaluate_const_expr(expr->binary.left) -
+           evaluate_const_expr(expr->binary.right);
 
   case EXPR_MULTIPLY:
-    return evaluate_const_expr(expr->binary.left, errors) *
-           evaluate_const_expr(expr->binary.right, errors);
+    return evaluate_const_expr(expr->binary.left) *
+           evaluate_const_expr(expr->binary.right);
 
   case EXPR_DIVIDE: {
-    int right = evaluate_const_expr(expr->binary.right, errors);
+    int right = evaluate_const_expr(expr->binary.right);
     if (right == 0) {
-      scu_perror(errors, "Division by zero in array size\n");
+      scu_perror("Division by zero in array size\n");
       return 0;
     }
-    return evaluate_const_expr(expr->binary.left, errors) / right;
+    return evaluate_const_expr(expr->binary.left) / right;
   }
 
   case EXPR_MODULO: {
-    int right = evaluate_const_expr(expr->binary.right, errors);
+    int right = evaluate_const_expr(expr->binary.right);
     if (right == 0) {
-      scu_perror(errors, "Division by zero in array size\n");
+      scu_perror("Division by zero in array size\n");
       return 0;
     }
-    return evaluate_const_expr(expr->binary.left, errors) % right;
+    return evaluate_const_expr(expr->binary.left) % right;
   }
   }
 }
@@ -85,8 +85,7 @@ static const char *type_to_str(type type) {
  * @param line: line number of the function call.
  */
 static void check_function_call(fn_call_node *fn_call, ht *functions,
-                                ht *variables, unsigned int *errors,
-                                size_t line);
+                                ht *variables, size_t line);
 
 /*
  * @brief: check for types in an instr_node (declaration)
@@ -95,8 +94,7 @@ static void check_function_call(fn_call_node *fn_call, ht *functions,
  * @param variables: pointer to the variables hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
-                            unsigned int *errors);
+static void instr_typecheck(instr_node *instr, ht *variables, ht *functions);
 
 /*
  * @brief: running stack offset counter for allocating variables and arrays.
@@ -130,7 +128,7 @@ static void declare_variables(variable *var_to_declare, ht *variables) {
  * @param errors: counter variable to increment when an error is encountered.
  */
 static void declare_array(variable *arr_to_declare, expr_node *size_expr,
-                          ht *variables, unsigned int *errors) {
+                          ht *variables) {
   if (!arr_to_declare || !arr_to_declare->name || !variables)
     return;
 
@@ -138,7 +136,7 @@ static void declare_array(variable *arr_to_declare, expr_node *size_expr,
   if (var)
     return;
 
-  int array_size = evaluate_const_expr(size_expr, errors);
+  int array_size = evaluate_const_expr(size_expr);
   size_t size_bytes = array_size * 4;
   arr_to_declare->stack_offset = current_stack_offset;
   current_stack_offset += size_bytes;
@@ -154,21 +152,20 @@ static void declare_array(variable *arr_to_declare, expr_node *size_expr,
  * @param functions: pointer to the functions hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void term_check_variables(term_node *term, ht *variables, ht *functions,
-                                 unsigned int *errors) {
+static void term_check_variables(term_node *term, ht *variables,
+                                 ht *functions) {
 
   switch (term->kind) {
   case TERM_IDENTIFIER:
     variable *var = ht_search(variables, term->identifier.name);
     if (!var) {
-      scu_perror(errors, "Use of undeclared variable: %s [line %u]\n",
+      scu_perror("Use of undeclared variable: %s [line %u]\n",
                  term->identifier.name, term->identifier.line);
     }
     break;
 
   case TERM_FUNCTION_CALL:
-    check_function_call(&term->fn_call, functions, variables, errors,
-                        term->line);
+    check_function_call(&term->fn_call, functions, variables, term->line);
     break;
 
   default:
@@ -184,19 +181,19 @@ static void term_check_variables(term_node *term, ht *variables, ht *functions,
  * @param functions: pointer to the functions hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void expr_check_variables(expr_node *expr, ht *variables, ht *functions,
-                                 unsigned int *errors) {
+static void expr_check_variables(expr_node *expr, ht *variables,
+                                 ht *functions) {
   switch (expr->kind) {
   case EXPR_TERM:
-    term_check_variables(&expr->term, variables, functions, errors);
+    term_check_variables(&expr->term, variables, functions);
     break;
   case EXPR_ADD:
   case EXPR_SUBTRACT:
   case EXPR_MULTIPLY:
   case EXPR_DIVIDE:
   case EXPR_MODULO:
-    expr_check_variables(expr->binary.left, variables, functions, errors);
-    expr_check_variables(expr->binary.right, variables, functions, errors);
+    expr_check_variables(expr->binary.left, variables, functions);
+    expr_check_variables(expr->binary.right, variables, functions);
     break;
   }
 }
@@ -209,10 +206,9 @@ static void expr_check_variables(expr_node *expr, ht *variables, ht *functions,
  * @param functions: pointer to the functions hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void rel_check_variables(rel_node *rel, ht *variables, ht *functions,
-                                unsigned int *errors) {
-  term_check_variables(&rel->comparison.lhs, variables, functions, errors);
-  term_check_variables(&rel->comparison.rhs, variables, functions, errors);
+static void rel_check_variables(rel_node *rel, ht *variables, ht *functions) {
+  term_check_variables(&rel->comparison.lhs, variables, functions);
+  term_check_variables(&rel->comparison.rhs, variables, functions);
 }
 
 /*
@@ -224,31 +220,30 @@ static void rel_check_variables(rel_node *rel, ht *variables, ht *functions,
  * @param errors: counter variable to increment when an error is encountered.
  */
 static void instr_check_variables(instr_node *instr, ht *variables,
-                                  ht *functions, unsigned int *errors) {
+                                  ht *functions) {
   switch (instr->kind) {
   case INSTR_DECLARE:
     declare_variables(&instr->declare_variable, variables);
     break;
 
   case INSTR_INITIALIZE:
-    expr_check_variables(instr->initialize_variable.expr, variables, functions,
-                         errors);
+    expr_check_variables(instr->initialize_variable.expr, variables, functions);
     declare_variables(&instr->initialize_variable.var, variables);
     break;
 
   case INSTR_DECLARE_ARRAY:
     declare_array(&instr->declare_array.var, instr->declare_array.size_expr,
-                  variables, errors);
+                  variables);
     break;
 
   case INSTR_INITIALIZE_ARRAY:
     declare_array(&instr->initialize_array.var,
-                  instr->initialize_array.size_expr, variables, errors);
+                  instr->initialize_array.size_expr, variables);
     for (size_t i = 0; i < instr->initialize_array.literal.elements.count;
          i++) {
       expr_node elem;
       dynamic_array_get(&instr->initialize_array.literal.elements, i, &elem);
-      expr_check_variables(&elem, variables, functions, errors);
+      expr_check_variables(&elem, variables, functions);
     }
     break;
 
@@ -256,35 +251,34 @@ static void instr_check_variables(instr_node *instr, ht *variables,
     variable *arr =
         ht_search(variables, instr->assign_to_array_subscript.var.name);
     if (!arr) {
-      scu_perror(errors, "Use of undeclared array: %s [line %u]\n",
+      scu_perror("Use of undeclared array: %s [line %u]\n",
                  instr->assign_to_array_subscript.var.name,
                  instr->assign_to_array_subscript.var.line);
     }
     expr_check_variables(instr->assign_to_array_subscript.index_expr, variables,
-                         functions, errors);
+                         functions);
     expr_check_variables(instr->assign_to_array_subscript.expr_to_assign,
-                         variables, functions, errors);
+                         variables, functions);
     break;
 
   case INSTR_ASSIGN:
-    expr_check_variables(instr->assign.expr, variables, functions, errors);
+    expr_check_variables(instr->assign.expr, variables, functions);
     break;
 
   case INSTR_IF:
-    rel_check_variables(&instr->if_.rel, variables, functions, errors);
-    instr_check_variables(instr->if_.instr, variables, functions, errors);
+    rel_check_variables(&instr->if_.rel, variables, functions);
+    instr_check_variables(instr->if_.instr, variables, functions);
     break;
 
   case INSTR_LOOP:
     if (instr->loop.kind == LOOP_WHILE) {
-      rel_check_variables(&instr->loop.break_condition, variables, functions,
-                          errors);
+      rel_check_variables(&instr->loop.break_condition, variables, functions);
     }
     for (size_t i = 0; i < instr->loop.instrs.count; i++) {
       instr_node instr_;
       dynamic_array_get(&instr->loop.instrs, i, &instr_);
-      instr_check_variables(&instr_, variables, functions, errors);
-      instr_typecheck(&instr_, variables, functions, errors);
+      instr_check_variables(&instr_, variables, functions);
+      instr_typecheck(&instr_, variables, functions);
     }
     break;
 
@@ -300,15 +294,14 @@ static void instr_check_variables(instr_node *instr, ht *variables,
  * @param instr: pointer to an instr_node.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void check_label(dynamic_array *labels, instr_node *instr,
-                        unsigned int *errors) {
+static void check_label(dynamic_array *labels, instr_node *instr) {
   const char *label_name = instr->label.label;
   for (unsigned int i = 0; i < labels->count; i++) {
     char *existing;
     dynamic_array_get(labels, i, &existing);
     if (strcmp(label_name, existing) == 0) {
-      scu_perror(errors, "Duplicate label declaration: %s [line %u]\n",
-                 label_name, instr->line);
+      scu_perror("Duplicate label declaration: %s [line %u]\n", label_name,
+                 instr->line);
       return;
     }
   }
@@ -322,8 +315,7 @@ static void check_label(dynamic_array *labels, instr_node *instr,
  * @param instr: pointer to an instr_node.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void check_goto(dynamic_array *labels, instr_node *instr,
-                       unsigned int *errors) {
+static void check_goto(dynamic_array *labels, instr_node *instr) {
   int found = 0;
   for (unsigned int i = 0; i < labels->count; i++) {
     char *label;
@@ -334,8 +326,8 @@ static void check_goto(dynamic_array *labels, instr_node *instr,
     }
   }
   if (!found) {
-    scu_perror(errors, "Use of undeclared label: %s [line %u]\n",
-               instr->goto_.label, instr->line);
+    scu_perror("Use of undeclared label: %s [line %u]\n", instr->goto_.label,
+               instr->line);
   }
 }
 
@@ -347,15 +339,14 @@ static void check_goto(dynamic_array *labels, instr_node *instr,
  * @param labels: pointer to the labels dynamic_array.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels,
-                                unsigned int *errors) {
+static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels) {
   // check labels first
   for (unsigned int i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
 
     if (instr.kind == INSTR_LABEL) {
-      check_label(labels, &instr, errors);
+      check_label(labels, &instr);
     }
   }
 
@@ -365,7 +356,7 @@ static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels,
     dynamic_array_get(instrs, i, &instr);
 
     if (instr.kind == INSTR_GOTO) {
-      check_goto(labels, &instr, errors);
+      check_goto(labels, &instr);
     }
   }
 
@@ -377,10 +368,10 @@ static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels,
     if (instr.kind == INSTR_IF) {
       switch (instr.if_.instr->kind) {
       case INSTR_GOTO:
-        check_goto(labels, instr.if_.instr, errors);
+        check_goto(labels, instr.if_.instr);
         break;
       case INSTR_LABEL:
-        check_label(labels, instr.if_.instr, errors);
+        check_label(labels, instr.if_.instr);
         break;
       default:
         break;
@@ -399,7 +390,7 @@ static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels,
  * @param errors: counter variable to increment when an error is encountered.
  */
 static type expr_type(expr_node *expr, type target_type, ht *variables,
-                      ht *functions, unsigned int *errors);
+                      ht *functions);
 
 /*
  * @brief: check for types in a term_node
@@ -411,8 +402,7 @@ static type expr_type(expr_node *expr, type target_type, ht *variables,
  * @param errors: counter variable to increment when an error is encountered.
  * @param line: where the term is situated in the source buffer.
  */
-static type term_type(term_node *term, ht *variables, ht *functions,
-                      unsigned int *errors) {
+static type term_type(term_node *term, ht *variables, ht *functions) {
   switch (term->kind) {
   case TERM_INT:
     return TYPE_INT;
@@ -424,28 +414,25 @@ static type term_type(term_node *term, ht *variables, ht *functions,
   case TERM_DEREF:
   case TERM_ADDOF:
   case TERM_IDENTIFIER:
-    return get_var_type(variables, &term->identifier, errors);
+    return get_var_type(variables, &term->identifier);
 
   case TERM_ARRAY_ACCESS:
-    type array_type =
-        get_var_type(variables, &term->array_access.array_var, errors);
+    type array_type = get_var_type(variables, &term->array_access.array_var);
     if (array_type == TYPE_VOID) {
-      scu_perror(errors, "Array '%s' not declared [line %zu]\n",
+      scu_perror("Array '%s' not declared [line %zu]\n",
                  term->array_access.array_var.name, term->line);
       return TYPE_VOID;
     }
     type index_type = expr_type(term->array_access.index_expr, TYPE_INT,
-                                variables, functions, errors);
+                                variables, functions);
     if (index_type != TYPE_INT) {
-      scu_perror(errors,
-                 "Array index must be of type int, got type at [line %zu]\n",
+      scu_perror("Array index must be of type int, got type at [line %zu]\n",
                  term->line);
     }
     return array_type;
 
   case TERM_ARRAY_LITERAL:
-    scu_perror(errors,
-               "Array literal cannot be used in expressions [line %zu]\n",
+    scu_perror("Array literal cannot be used in expressions [line %zu]\n",
                term->line);
     return -1;
     break;
@@ -453,22 +440,20 @@ static type term_type(term_node *term, ht *variables, ht *functions,
   case TERM_FUNCTION_CALL: {
     fn_node *fn = ht_search(functions, term->fn_call.name);
     if (!fn) {
-      scu_perror(errors, "Call to undeclared function: %s [line %zu]\n",
+      scu_perror("Call to undeclared function: %s [line %zu]\n",
                  term->fn_call.name, term->line);
       return TYPE_VOID;
     }
 
     if (!fn->is_variadic &&
         term->fn_call.parameters.count != fn->parameters.count) {
-      scu_perror(errors,
-                 "Function '%s' expects %zu arguments, but %zu were provided "
+      scu_perror("Function '%s' expects %zu arguments, but %zu were provided "
                  "[line %zu]\n",
                  term->fn_call.name, fn->parameters.count,
                  term->fn_call.parameters.count, term->line);
     } else if (fn->is_variadic &&
                term->fn_call.parameters.count < fn->parameters.count) {
-      scu_perror(errors,
-                 "Variadic function '%s' requires at least %zu fixed arguments "
+      scu_perror("Variadic function '%s' requires at least %zu fixed arguments "
                  "[line %zu]\n",
                  term->fn_call.name, fn->parameters.count, term->line);
     }
@@ -481,14 +466,13 @@ static type term_type(term_node *term, ht *variables, ht *functions,
       variable param;
       dynamic_array_get(&fn->parameters, i, &param);
 
-      type arg_type =
-          expr_type(&arg_expr, param.type, variables, functions, errors);
+      type arg_type = expr_type(&arg_expr, param.type, variables, functions);
 
       if (arg_type != param.type) {
         if (!(param.type == TYPE_POINTER &&
               (arg_type == TYPE_STRING || arg_type == TYPE_POINTER))) {
           scu_perror(
-              errors,
+
               "Type mismatch in argument %zu to function '%s': expected %s, "
               "got %s [line %zu]\n",
               i + 1, term->fn_call.name, type_to_str(param.type),
@@ -498,8 +482,7 @@ static type term_type(term_node *term, ht *variables, ht *functions,
     }
 
     if (fn->returntypes.count == 0) {
-      scu_perror(errors,
-                 "Function '%s' has no return value but is used in expression "
+      scu_perror("Function '%s' has no return value but is used in expression "
                  "[line %zu]\n",
                  term->fn_call.name, term->line);
       return TYPE_VOID;
@@ -522,29 +505,26 @@ static type term_type(term_node *term, ht *variables, ht *functions,
  * @param errors: counter variable to increment when an error is encountered.
  */
 static type expr_type(expr_node *expr, type target_type, ht *variables,
-                      ht *functions, unsigned int *errors) {
+                      ht *functions) {
   type lhs, rhs;
 
   switch (expr->kind) {
   case EXPR_TERM:
-    return term_type(&expr->term, variables, functions, errors);
+    return term_type(&expr->term, variables, functions);
   case EXPR_ADD:
   case EXPR_SUBTRACT:
   case EXPR_MULTIPLY:
   case EXPR_DIVIDE:
   case EXPR_MODULO:
-    lhs =
-        expr_type(expr->binary.left, target_type, variables, functions, errors);
-    rhs = expr_type(expr->binary.right, target_type, variables, functions,
-                    errors);
+    lhs = expr_type(expr->binary.left, target_type, variables, functions);
+    rhs = expr_type(expr->binary.right, target_type, variables, functions);
     break;
   }
 
   if (lhs != rhs) {
     const char *lhs_type_str = type_to_str(lhs);
     const char *rhs_type_str = type_to_str(rhs);
-    scu_perror(errors,
-               "Type mismatch in arithmetic expression: %s vs %s [line %u]\n",
+    scu_perror("Type mismatch in arithmetic expression: %s vs %s [line %u]\n",
                lhs_type_str, rhs_type_str, expr->line);
   }
 
@@ -558,18 +538,16 @@ static type expr_type(expr_node *expr, type target_type, ht *variables,
  * @param variables: pointer to the variables hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void rel_typecheck(rel_node *rel, ht *variables, ht *functions,
-                          unsigned int *errors) {
+static void rel_typecheck(rel_node *rel, ht *variables, ht *functions) {
   type lhs, rhs;
 
-  lhs = term_type(&rel->comparison.lhs, variables, functions, errors);
-  rhs = term_type(&rel->comparison.rhs, variables, functions, errors);
+  lhs = term_type(&rel->comparison.lhs, variables, functions);
+  rhs = term_type(&rel->comparison.rhs, variables, functions);
 
   if (lhs != rhs) {
     const char *lhs_type_str = type_to_str(lhs);
     const char *rhs_type_str = type_to_str(rhs);
-    scu_perror(errors,
-               "Type mismatch in conditional statement: %s vs %s [line %u]\n",
+    scu_perror("Type mismatch in conditional statement: %s vs %s [line %u]\n",
                lhs_type_str, rhs_type_str, rel->line);
   }
 }
@@ -581,20 +559,18 @@ static void rel_typecheck(rel_node *rel, ht *variables, ht *functions,
  * @param variables: pointer to the variables hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
-                            unsigned int *errors) {
+static void instr_typecheck(instr_node *instr, ht *variables, ht *functions) {
   switch (instr->kind) {
   case INSTR_INITIALIZE: {
     type target_type = instr->initialize_variable.var.type;
     type expr_result = expr_type(instr->initialize_variable.expr, target_type,
-                                 variables, functions, errors);
+                                 variables, functions);
     if (target_type == TYPE_POINTER) {
       return;
     } else if (target_type != expr_result) {
       const char *target_type_str = type_to_str(target_type);
       const char *expr_result_str = type_to_str(expr_result);
-      scu_perror(errors,
-                 "Type mismatch in initialization to %s - %s to %s [line %u]\n",
+      scu_perror("Type mismatch in initialization to %s - %s to %s [line %u]\n",
                  instr->assign.identifier.name, expr_result_str,
                  target_type_str, instr->line);
     }
@@ -607,13 +583,11 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
          i++) {
       expr_node elem;
       dynamic_array_get(&instr->initialize_array.literal.elements, i, &elem);
-      type elem_type =
-          expr_type(&elem, array_type, variables, functions, errors);
+      type elem_type = expr_type(&elem, array_type, variables, functions);
       if (array_type != elem_type && array_type != TYPE_POINTER) {
         const char *array_type_str = type_to_str(array_type);
         const char *elem_type_str = type_to_str(elem_type);
-        scu_perror(errors,
-                   "Type mismatch in array initialization - element %zu is %s "
+        scu_perror("Type mismatch in array initialization - element %zu is %s "
                    "but array is %s [line %u]\n",
                    i, elem_type_str, array_type_str, instr->line);
       }
@@ -622,17 +596,15 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
   }
 
   case INSTR_ASSIGN: {
-    type target_type =
-        get_var_type(variables, &instr->assign.identifier, errors);
-    type expr_result = expr_type(instr->assign.expr, target_type, variables,
-                                 functions, errors);
+    type target_type = get_var_type(variables, &instr->assign.identifier);
+    type expr_result =
+        expr_type(instr->assign.expr, target_type, variables, functions);
     if (target_type == TYPE_POINTER) {
       return;
     } else if (target_type != expr_result) {
       const char *target_type_str = type_to_str(target_type);
       const char *expr_result_str = type_to_str(expr_result);
-      scu_perror(errors,
-                 "Type mismatch in assignment to %s - %s to %s [line %u]\n",
+      scu_perror("Type mismatch in assignment to %s - %s to %s [line %u]\n",
                  instr->assign.identifier.name, expr_result_str,
                  target_type_str, instr->line);
     }
@@ -641,23 +613,23 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
 
   case INSTR_ASSIGN_TO_ARRAY_SUBSCRIPT: {
     type array_type =
-        get_var_type(variables, &instr->assign_to_array_subscript.var, errors);
+        get_var_type(variables, &instr->assign_to_array_subscript.var);
 
     type index_type = expr_type(instr->assign_to_array_subscript.index_expr,
-                                TYPE_INT, variables, functions, errors);
+                                TYPE_INT, variables, functions);
     if (index_type != TYPE_INT) {
-      scu_perror(errors, "Array index must be of type int, got %s [line %u]\n",
+      scu_perror("Array index must be of type int, got %s [line %u]\n",
                  type_to_str(index_type), instr->line);
     }
 
     type expr_result =
         expr_type(instr->assign_to_array_subscript.expr_to_assign, array_type,
-                  variables, functions, errors);
+                  variables, functions);
     if (array_type != expr_result && array_type != TYPE_POINTER) {
       const char *array_type_str = type_to_str(array_type);
       const char *expr_result_str = type_to_str(expr_result);
       scu_perror(
-          errors,
+
           "Type mismatch in array assignment to %s - %s to %s [line %u]\n",
           instr->assign_to_array_subscript.var.name, expr_result_str,
           array_type_str, instr->line);
@@ -666,7 +638,7 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
   }
 
   case INSTR_IF:
-    rel_typecheck(&instr->if_.rel, variables, functions, errors);
+    rel_typecheck(&instr->if_.rel, variables, functions);
     break;
   default:
     break;
@@ -680,38 +652,34 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions,
  * @param functions: pointer to the functions hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void register_function(fn_node *fn, ht *functions,
-                              unsigned int *errors) {
+static void register_function(fn_node *fn, ht *functions) {
   if (!fn || !fn->name || !functions)
     return;
 
   fn_node *existing = ht_search(functions, fn->name);
   if (existing) {
     if (existing->is_variadic != fn->is_variadic) {
-      scu_perror(errors, "Function '%s' variadic mismatch\n", fn->name);
+      scu_perror("Function '%s' variadic mismatch\n", fn->name);
       return;
     }
 
     if (!fn->is_variadic && existing->parameters.count != fn->parameters.count)
-      scu_perror(errors,
-                 "Function '%s' parameter count mismatch: declared with %zu, "
+      scu_perror("Function '%s' parameter count mismatch: declared with %zu, "
                  "but has %zu\n",
                  fn->name, existing->parameters.count, fn->parameters.count);
 
     if (fn->kind == FN_DEFINED && existing->kind == FN_DEFINED) {
-      scu_perror(errors, "Duplicate function definition: %s\n", fn->name);
+      scu_perror("Duplicate function definition: %s\n", fn->name);
       return;
     }
 
     if (existing->parameters.count != fn->parameters.count)
-      scu_perror(errors,
-                 "Function '%s' parameter count mismatch: declared with %zu, "
+      scu_perror("Function '%s' parameter count mismatch: declared with %zu, "
                  "but has %zu\n",
                  fn->name, existing->parameters.count, fn->parameters.count);
 
     if (existing->returntypes.count != fn->returntypes.count)
-      scu_perror(errors, "Function '%s' return type count mismatch\n",
-                 fn->name);
+      scu_perror("Function '%s' return type count mismatch\n", fn->name);
 
     if (fn->kind == FN_DECLARED && existing->kind == FN_DEFINED)
       return;
@@ -732,30 +700,27 @@ static void register_function(fn_node *fn, ht *functions,
  * @param line: line number of the function call.
  */
 static void check_function_call(fn_call_node *fn_call, ht *functions,
-                                ht *variables, unsigned int *errors,
-                                size_t line) {
+                                ht *variables, size_t line) {
   if (!fn_call || !fn_call->name)
     return;
 
   fn_node *fn = ht_search(functions, fn_call->name);
 
   if (!fn) {
-    scu_perror(errors, "Call to undeclared function: %s [line %zu]\n",
-               fn_call->name, line);
+    scu_perror("Call to undeclared function: %s [line %zu]\n", fn_call->name,
+               line);
     return;
   }
 
   if (!fn->is_variadic && fn_call->parameters.count != fn->parameters.count) {
-    scu_perror(errors,
-               "Function '%s' expects %zu arguments, but %zu were provided "
+    scu_perror("Function '%s' expects %zu arguments, but %zu were provided "
                "[line %zu]\n",
                fn_call->name, fn->parameters.count, fn_call->parameters.count,
                line);
     return;
   } else if (fn->is_variadic &&
              fn_call->parameters.count < fn->parameters.count) {
-    scu_perror(errors,
-               "Variadic function '%s' requires at least %zu fixed arguments "
+    scu_perror("Variadic function '%s' requires at least %zu fixed arguments "
                "[line %zu]\n",
                fn_call->name, fn->parameters.count, line);
     return;
@@ -769,12 +734,10 @@ static void check_function_call(fn_call_node *fn_call, ht *functions,
     variable param;
     dynamic_array_get(&fn->parameters, i, &param);
 
-    type arg_type =
-        expr_type(&arg_expr, param.type, variables, functions, errors);
+    type arg_type = expr_type(&arg_expr, param.type, variables, functions);
 
     if (arg_type != param.type && param.type != TYPE_POINTER) {
-      scu_perror(errors,
-                 "Type mismatch in argument %zu to function '%s': expected %s, "
+      scu_perror("Type mismatch in argument %zu to function '%s': expected %s, "
                  "got %s [line %zu]\n",
                  i + 1, fn_call->name, type_to_str(param.type),
                  type_to_str(arg_type), line);
@@ -792,14 +755,12 @@ static void check_function_call(fn_call_node *fn_call, ht *functions,
  * @param line: line number of the return statement.
  */
 static void check_return_statement(return_node *ret, fn_node *fn, ht *variables,
-                                   ht *functions, unsigned int *errors,
-                                   size_t line) {
+                                   ht *functions, size_t line) {
   if (!ret || !fn)
     return;
 
   if (ret->returnvals.count != fn->returntypes.count) {
-    scu_perror(errors,
-               "Function '%s' expects %zu return values, but %zu were provided "
+    scu_perror("Function '%s' expects %zu return values, but %zu were provided "
                "[line %zu]\n",
                fn->name, fn->returntypes.count, ret->returnvals.count, line);
     return;
@@ -813,10 +774,9 @@ static void check_return_statement(return_node *ret, fn_node *fn, ht *variables,
     dynamic_array_get(&fn->returntypes, i, &expected_type);
 
     type actual_type =
-        expr_type(&ret_expr, expected_type, variables, functions, errors);
+        expr_type(&ret_expr, expected_type, variables, functions);
     if (actual_type != expected_type && expected_type != TYPE_POINTER) {
-      scu_perror(errors,
-                 "Return type mismatch in function '%s': expected %s, got %s "
+      scu_perror("Return type mismatch in function '%s': expected %s, got %s "
                  "[line %zu]\n",
                  fn->name, type_to_str(expected_type), type_to_str(actual_type),
                  line);
@@ -851,8 +811,7 @@ static void register_function_parameters(fn_node *fn) {
  * @param functions: pointer to the functions hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-static void check_function_body(fn_node *fn, ht *functions,
-                                unsigned int *errors) {
+static void check_function_body(fn_node *fn, ht *functions) {
   if (fn->kind != FN_DEFINED)
     return;
 
@@ -865,20 +824,19 @@ static void check_function_body(fn_node *fn, ht *functions,
     instr_node instr;
     dynamic_array_get(&fn->defined.instrs, i, &instr);
 
-    instr_check_variables(&instr, fn->defined.variables, functions, errors);
-    instr_typecheck(&instr, fn->defined.variables, functions, errors);
+    instr_check_variables(&instr, fn->defined.variables, functions);
+    instr_typecheck(&instr, fn->defined.variables, functions);
 
     if (instr.kind == INSTR_RETURN) {
       check_return_statement(&instr.ret_node, fn, fn->defined.variables,
-                             functions, errors, instr.line);
+                             functions, instr.line);
     }
   }
 
   current_stack_offset = saved_offset;
 }
 
-void check_semantics(dynamic_array *instrs, ht *variables, ht *functions,
-                     unsigned int *errors) {
+void check_semantics(dynamic_array *instrs, ht *variables, ht *functions) {
   // Define and declare any / all functions
   for (unsigned int i = 0; i < instrs->count; i++) {
     instr_node instr;
@@ -886,12 +844,11 @@ void check_semantics(dynamic_array *instrs, ht *variables, ht *functions,
 
     if (instr.kind == INSTR_FN_DECLARE || instr.kind == INSTR_FN_DEFINE) {
       // since this is a union anyways
-      register_function(&instr.fn_declare_node, functions, errors);
+      register_function(&instr.fn_declare_node, functions);
     }
 
     if (instr.kind == INSTR_FN_CALL)
-      check_function_call(&instr.fn_call, functions, variables, errors,
-                          instr.line);
+      check_function_call(&instr.fn_call, functions, variables, instr.line);
   }
 
   // Validate everything
@@ -900,18 +857,18 @@ void check_semantics(dynamic_array *instrs, ht *variables, ht *functions,
     dynamic_array_get(instrs, i, &instr);
 
     if (instr.kind == INSTR_FN_DEFINE) {
-      check_function_body(&instr.fn_define_node, functions, errors);
+      check_function_body(&instr.fn_define_node, functions);
     } else if (instr.kind != INSTR_FN_DECLARE) {
-      instr_check_variables(&instr, variables, functions, errors);
-      instr_typecheck(&instr, variables, functions, errors);
+      instr_check_variables(&instr, variables, functions);
+      instr_typecheck(&instr, variables, functions);
     }
   }
 
   // Check labels
   dynamic_array labels;
   dynamic_array_init(&labels, sizeof(char *));
-  instrs_check_labels(instrs, &labels, errors);
+  instrs_check_labels(instrs, &labels);
   dynamic_array_free(&labels);
 
-  scu_check_errors(errors);
+  scu_check_errors();
 }

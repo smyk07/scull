@@ -6,7 +6,7 @@
 
 int stack_init(stack *s, size_t item_size) {
   if (!s) {
-    scu_perror(NULL, "Invalid stack pointer passed to stack_init.\n");
+    scu_perror("Invalid stack pointer passed to stack_init.\n");
     return -1;
   }
   s->item_size = item_size;
@@ -18,11 +18,11 @@ int stack_init(stack *s, size_t item_size) {
 
 static int stack_expand(stack *s) {
   if (!s) {
-    scu_perror(NULL, "Invalid stack pointer passed to stack_expand.\n");
+    scu_perror("Invalid stack pointer passed to stack_expand.\n");
     return -1;
   }
   if (!s->items) {
-    scu_perror(NULL, "Uninitialized stack passed to stack_expand.\n");
+    scu_perror("Uninitialized stack passed to stack_expand.\n");
     return -1;
   }
   size_t new_capacity = s->capacity * STACK_RESIZE_FACTOR;
@@ -34,11 +34,11 @@ static int stack_expand(stack *s) {
 
 static int stack_shrink(stack *s) {
   if (!s) {
-    scu_perror(NULL, "Invalid stack pointer passed to stack_shrink.\n");
+    scu_perror("Invalid stack pointer passed to stack_shrink.\n");
     return -1;
   }
   if (!s->items) {
-    scu_perror(NULL, "Uninitialized stack passed to stack_shrink.\n");
+    scu_perror("Uninitialized stack passed to stack_shrink.\n");
     return -1;
   }
   size_t new_capacity = s->capacity / STACK_RESIZE_FACTOR;
@@ -53,18 +53,18 @@ static int stack_shrink(stack *s) {
 
 int stack_push(stack *s, void *item) {
   if (!s || !item) {
-    scu_perror(NULL, "Invalid parameter passed to stack_push.\n");
+    scu_perror("Invalid parameter passed to stack_push.\n");
     return -1;
   }
 
   if (!s->items || s->item_size == 0) {
-    scu_perror(NULL, "Uninitialized stack passed to stack_push.\n");
+    scu_perror("Uninitialized stack passed to stack_push.\n");
     return -1;
   }
 
   if (s->count == s->capacity) {
     if (stack_expand(s) != 0) {
-      scu_perror(NULL, "Stack resize failed in stack_push.\n");
+      scu_perror("Stack resize failed in stack_push.\n");
       return -1;
     }
   }
@@ -76,17 +76,17 @@ int stack_push(stack *s, void *item) {
 
 int stack_pop(stack *s, void *item) {
   if (!s || !item) {
-    scu_perror(NULL, "Invalid parameter passed to stack_pop.\n");
+    scu_perror("Invalid parameter passed to stack_pop.\n");
     return -1;
   }
 
   if (!s->items || s->item_size == 0) {
-    scu_perror(NULL, "Uninitialized stack passed to stack_pop.\n");
+    scu_perror("Uninitialized stack passed to stack_pop.\n");
     return -1;
   }
 
   if (s->count == 0) {
-    scu_perror(NULL, "Cannot pop from empty stack.\n");
+    scu_perror("Cannot pop from empty stack.\n");
     return -1;
   }
 
@@ -96,7 +96,7 @@ int stack_pop(stack *s, void *item) {
 
   if (s->count < (s->capacity / STACK_RESIZE_FACTOR)) {
     if (stack_shrink(s) != 0) {
-      scu_perror(NULL, "Stack resize failed in stack_pop.\n");
+      scu_perror("Stack resize failed in stack_pop.\n");
       return -1;
     }
   }
@@ -106,17 +106,17 @@ int stack_pop(stack *s, void *item) {
 
 void *stack_top(stack *s) {
   if (!s) {
-    scu_perror(NULL, "Invalid stack pointer passed to stack_top.\n");
+    scu_perror("Invalid stack pointer passed to stack_top.\n");
     return NULL;
   }
 
   if (!s->items || s->item_size == 0) {
-    scu_perror(NULL, "Uninitialized stack passed to stack_top.\n");
+    scu_perror("Uninitialized stack passed to stack_top.\n");
     return NULL;
   }
 
   if (s->count == 0) {
-    scu_perror(NULL, "Cannot get top of empty stack.\n");
+    scu_perror("Cannot get top of empty stack.\n");
     return NULL;
   }
 

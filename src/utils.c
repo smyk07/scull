@@ -2,17 +2,20 @@
 
 #include <assert.h>
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+static size_t err_count = 0;
 
 void *scu_checked_malloc(size_t size) {
   if (size == 0)
     size = 1;
   void *ptr = calloc(1, size);
   if (ptr == NULL) {
-    scu_perror(NULL, "Memory allocation failed.");
+    scu_perror("Memory allocation failed.");
     exit(1);
   }
   return ptr;
@@ -23,7 +26,7 @@ void *scu_checked_realloc(void *ptr, size_t size) {
     size = 1;
   void *newptr = realloc(ptr, size);
   if (newptr == NULL) {
-    scu_perror(NULL, "Memory re-allocation failed.");
+    scu_perror("Memory re-allocation failed.");
     exit(1);
   }
   return newptr;
@@ -48,13 +51,13 @@ char *scu_extract_name(const char *filename) {
 
 #define MAX_LEN 4096
 
-int scu_read_file(const char *path, char **buffer, unsigned int *error_count) {
+int scu_read_file(const char *path, char **buffer) {
   struct stat path_stat;
   stat(path, &path_stat);
 
   if (!S_ISREG(path_stat.st_mode)) {
-    scu_perror(error_count, "Given path is not a valid file.\n");
-    scu_check_errors(error_count);
+    scu_perror("Given path is not a valid file.\n");
+    scu_check_errors();
   }
 
   int tmp_capacity = MAX_LEN;
@@ -137,10 +140,8 @@ void scu_pwarning(char *__restrict __format, ...) {
   va_end(args);
 }
 
-void scu_perror(unsigned int *errors, char *__restrict __format, ...) {
-  if (errors != NULL) {
-    (*errors)++;
-  }
+void scu_perror(char *__restrict __format, ...) {
+  err_count++;
   va_list args;
   va_start(args, __format);
   fprintf(stderr, "\033[1;31m[ERROR] \033[0m");
@@ -148,9 +149,9 @@ void scu_perror(unsigned int *errors, char *__restrict __format, ...) {
   va_end(args);
 }
 
-void scu_check_errors(unsigned int *errors) {
-  if (*errors) {
-    scu_pwarning("%d error(s) found\n", *errors);
+void scu_check_errors() {
+  if (err_count) {
+    scu_pwarning("%d error(s) found\n", err_count);
     exit(1);
   }
 }

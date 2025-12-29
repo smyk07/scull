@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
 
     // Lexing
     lexer_tokenize(fst->code_buffer, fst->code_buffer_len, fst->tokens,
-                   cst->include_dir, &fst->error_count);
+                   cst->include_dir);
 
     // Lexing debug statements
     if (cst->options.verbose) {
@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 
     // Parsing
     parser_init(fst->tokens, fst->parser);
-    parser_parse_program(fst->parser, fst->program_ast, &fst->error_count);
+    parser_parse_program(fst->parser, fst->program_ast);
 
     // Parsing debug statements
     if (cst->options.verbose) {
@@ -67,8 +67,7 @@ int main(int argc, char *argv[]) {
     }
 
     // Semantic Analysis
-    check_semantics(&fst->program_ast->instrs, fst->variables, fst->functions,
-                    &fst->error_count);
+    check_semantics(&fst->program_ast->instrs, fst->variables, fst->functions);
 
     // Semantic Debug Statement
     if (cst->options.verbose)

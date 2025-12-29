@@ -540,8 +540,7 @@ static token lexer_next_token(lexer *l) {
 }
 
 void lexer_tokenize(const char *buffer, size_t buffer_len,
-                    dynamic_array *tokens, const char *include_dir,
-                    unsigned int *errors) {
+                    dynamic_array *tokens, const char *include_dir) {
   lexer lexer;
   lexer_init(&lexer, buffer, buffer_len);
 
@@ -557,10 +556,9 @@ void lexer_tokenize(const char *buffer, size_t buffer_len,
       snprintf(filepath_to_include, total_len, "%s/%s", include_dir,
                incl_str_token.value.str);
       char *incl_buffer = NULL;
-      size_t incl_buffer_len =
-          scu_read_file(filepath_to_include, &incl_buffer, errors);
+      size_t incl_buffer_len = scu_read_file(filepath_to_include, &incl_buffer);
 
-      lexer_tokenize(incl_buffer, incl_buffer_len, tokens, include_dir, errors);
+      lexer_tokenize(incl_buffer, incl_buffer_len, tokens, include_dir);
 
       dynamic_array_remove(tokens, tokens->count - 1);
       free(filepath_to_include);
@@ -571,7 +569,7 @@ void lexer_tokenize(const char *buffer, size_t buffer_len,
     }
 
     if (dynamic_array_append(tokens, &tok) != 0) {
-      scu_perror(errors, "Failed to append token to array\n");
+      scu_perror("Failed to append token to array\n");
       exit(1);
     }
   } while (tok.kind != TOKEN_END);

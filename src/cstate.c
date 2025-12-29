@@ -75,7 +75,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
       LLVMInitializeAllAsmPrinters();
 
       if (i + 1 >= argc) {
-        scu_perror(NULL, "Missing target after %s\n", arg);
+        scu_perror("Missing target after %s\n", arg);
         exit(1);
       }
 
@@ -84,7 +84,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
       LLVMTargetRef T = NULL;
 
       if (LLVMGetTargetFromTriple(target_str, &T, &err) != 0) {
-        scu_perror(NULL, "Invalid or unsupported target triple '%s': %s\n",
+        scu_perror("Invalid or unsupported target triple '%s': %s\n",
                    target_str, err ? err : "unknown error");
 
         if (err)
@@ -102,12 +102,12 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
     if (strcmp(arg, "--output") == 0 || strcmp(arg, "-o") == 0) {
       if (i + 1 >= argc) {
-        scu_perror(NULL, "Missing filename after %s\n", arg);
+        scu_perror("Missing filename after %s\n", arg);
         exit(1);
       }
 
       if (cst->output_filepath != NULL) {
-        scu_perror(NULL, "Output specified more than once: %s\n", argv[i + 1]);
+        scu_perror("Output specified more than once: %s\n", argv[i + 1]);
         exit(1);
       }
 
@@ -119,24 +119,24 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
     if (strcmp(arg, "--include_dir") == 0 || strcmp(arg, "-i") == 0) {
       if (i + 1 >= argc) {
-        scu_perror(NULL, "Missing directory path after %s\n", arg);
+        scu_perror("Missing directory path after %s\n", arg);
         exit(1);
       }
 
       if (cst->include_dir != NULL) {
-        scu_perror(NULL, "Include directory specified more than once: %s\n",
+        scu_perror("Include directory specified more than once: %s\n",
                    argv[i + 1]);
         exit(1);
       }
 
       struct stat st;
       if (stat(argv[i + 1], &st) != 0) {
-        scu_perror(NULL, "Include directory does not exist: %s\n", argv[i + 1]);
+        scu_perror("Include directory does not exist: %s\n", argv[i + 1]);
         exit(1);
       }
 
       if (!S_ISDIR(st.st_mode)) {
-        scu_perror(NULL, "Path is not a directory: %s\n", argv[i + 1]);
+        scu_perror("Path is not a directory: %s\n", argv[i + 1]);
         exit(1);
       }
 
@@ -172,7 +172,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
       continue;
     }
 
-    scu_perror(NULL, "Unknown option: %s\n", arg);
+    scu_perror("Unknown option: %s\n", arg);
     exit(1);
   }
 
@@ -180,7 +180,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
     cst->include_dir = strdup(".");
 
   if (filenames.count == 0) {
-    scu_perror(NULL, "Missing input filename\n");
+    scu_perror("Missing input filename\n");
     exit(1);
   }
 
@@ -189,7 +189,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
     dynamic_array_get(&filenames, 0, &first_filename);
     cst->output_filepath = scu_extract_name(first_filename);
     if (!cst->output_filepath) {
-      scu_perror(NULL, "Failed to extract filename.\n");
+      scu_perror("Failed to extract filename.\n");
       exit(1);
     }
   }
@@ -202,7 +202,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
     fstate *fst = create_new_fstate(filepath);
     if (fst == NULL) {
-      scu_perror(NULL, "Failed to create fstate for: %s\n", filepath);
+      scu_perror("Failed to create fstate for: %s\n", filepath);
       exit(1);
     }
 

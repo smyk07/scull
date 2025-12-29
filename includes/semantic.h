@@ -16,11 +16,10 @@
  * @brief: evaluate a constant expression to extract integer value
  *
  * @param expr: pointer to an expr_node
- * @param errors: counter variable to increment when an error is encountered.
  *
  * @return: the integer value of the constant expression
  */
-int evaluate_const_expr(expr_node *expr, unsigned int *errors);
+int evaluate_const_expr(expr_node *expr);
 
 /*
  * @brief: go through all the variables and labels in the parse tree and check
@@ -31,7 +30,6 @@ int evaluate_const_expr(expr_node *expr, unsigned int *errors);
  * @param functions: pointer to the functions hash table.
  * @param errors: counter variable to increment when an error is encountered.
  */
-void check_semantics(dynamic_array *instrs, ht *variables, ht *functions,
-                     unsigned int *errors);
+void check_semantics(dynamic_array *instrs, ht *variables, ht *functions);
 
 #endif // !SEMANTIC

@@ -41,12 +41,10 @@ char *scu_extract_name(const char *filename);
  * @param path: path to file
  * @param buffer: pointer to a string where the contents of the file are to be
  * stored.
- * @param error_count counter variable to increment when an error is
- * encountered.
  *
  * @return number of bytes read
  */
-int scu_read_file(const char *path, char **buffer, unsigned int *error_count);
+int scu_read_file(const char *path, char **buffer);
 
 /*
  * @brief: formats a string with variable arguments.
@@ -89,18 +87,15 @@ void scu_pwarning(char *__restrict __format, ...);
 /*
  * @brief: print a formatted error message.
  *
- * @param errors counter variable to increment when an error is encountered.
  * @param __format: a format string containing format specifiers.
  * @param ...: variable arguments corresponsing to the format specifiers in
  * __format.
  */
-void scu_perror(unsigned int *errors, char *__restrict __format, ...);
+void scu_perror(char *__restrict __format, ...);
 
 /*
  * @brief: exit the compiler pipeline if errors are found.
- *
- * @param errors counter variable to increment when an error is encountered.
  */
-void scu_check_errors(unsigned int *errors);
+void scu_check_errors();
 
 #endif

@@ -36,7 +36,7 @@ void ld_link(const char *output_file, const char *obj_file) {
                    llvm::errs(), {{lld::Gnu, &lld::elf::link}});
 
   if (result.retCode != 0) {
-    scu_perror(NULL, const_cast<char *>("Linking failed\n"));
+    scu_perror(const_cast<char *>("Linking failed\n"));
     exit(1);
   }
 }

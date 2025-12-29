@@ -25,11 +25,6 @@ typedef struct fstate {
   char *extracted_filepath;
 
   /*
-   * Error count for the file
-   */
-  unsigned int error_count;
-
-  /*
    * Source buffer and its size in bytes.
    */
   char *code_buffer;

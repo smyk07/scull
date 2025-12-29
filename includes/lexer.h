@@ -35,11 +35,9 @@ typedef struct lexer {
  * @param buffer: string to be tokenized.
  * @param buffer_len size of buffer (in bytes).
  * @param tokens: dynamic_array of tokens (should be initialized).
- * @param errors: error counter to increment whenever an errror is encountered.
  */
 void lexer_tokenize(const char *buffer, size_t buffer_len,
-                    dynamic_array *tokens, const char *include_dir,
-                    unsigned int *errors);
+                    dynamic_array *tokens, const char *include_dir);
 
 /*
  * @brief: Converts a token_kind enum value to its string representation.

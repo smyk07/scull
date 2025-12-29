@@ -14,10 +14,9 @@ fstate *create_new_fstate(const char *filepath) {
   fst->filepath = filepath;
   fst->extracted_filepath = scu_extract_name(fst->filepath);
 
-  fst->code_buffer_len =
-      scu_read_file(fst->filepath, &fst->code_buffer, &fst->error_count);
+  fst->code_buffer_len = scu_read_file(fst->filepath, &fst->code_buffer);
   if (fst->code_buffer == NULL) {
-    scu_perror(&fst->error_count, "Failed to read file: %s\n", fst->filepath);
+    scu_perror("Failed to read file: %s\n", fst->filepath);
     exit(1);
   }
 

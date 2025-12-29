@@ -30,7 +30,6 @@ void *arena_push(mem_arena *arena, uint64_t size) {
 
   if (new_pos > ARENA_BASE_POS + arena->capacity) {
     scu_perror(
-        NULL,
         "Failed to allocate memory (requested more than available capacity)\n");
     arena_destroy(arena);
     return NULL;
