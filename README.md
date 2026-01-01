@@ -1,5 +1,7 @@
 # Scull
 
+<img src="logo/logo.jpg" alt="SCULL Logo" height="150" title="Thanks, Vismita!">
+
 A C and Go like systems level programming language. Final name yet to be decided.
 Only linux systems are supported for now.
 
