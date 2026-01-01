@@ -9,7 +9,9 @@
 !/tests/
 !/tests/**
 !/examples/
-!/examples/
+!/examples/**
+!/logo/
+!/logo/**
 !*.scl
 
 !Makefile
