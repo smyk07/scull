@@ -125,7 +125,46 @@ static ht *ht_new_sized(const size_t base_capacity, const size_t value_size) {
   return table;
 }
 
-ht *ht_new(const size_t value_size) { return ht_new_sized(53, value_size); }
+ht *ht_create(const size_t value_size) { return ht_new_sized(53, value_size); }
+
+void ht_destroy(ht *table) {
+  if (table == NULL)
+    return;
+
+  if (table->items != NULL) {
+    for (size_t i = 0; i < table->capacity; i++) {
+      ht_item *item = table->items[i];
+      if (item != NULL && item != &HT_DELETED_ITEM) { // Skip sentinel
+        ht_del_item(item);
+      }
+    }
+    free(table->items);
+  }
+  free(table);
+}
+
+void ht_init(ht *table, const size_t value_size) {
+  table->base_capacity = 53;
+  table->capacity = next_prime(table->base_capacity);
+  table->count = 0;
+  table->items = scu_checked_malloc(table->capacity * sizeof(ht_item *));
+  table->value_size = value_size;
+}
+
+void ht_free(ht *table) {
+  if (table == NULL)
+    return;
+
+  if (table->items != NULL) {
+    for (size_t i = 0; i < table->capacity; i++) {
+      ht_item *item = table->items[i];
+      if (item != NULL && item != &HT_DELETED_ITEM) { // Skip sentinel
+        ht_del_item(item);
+      }
+    }
+    free(table->items);
+  }
+}
 
 /*
  * @brief: resize an existing hash table to avoid high collission rates and keep
@@ -158,7 +197,7 @@ static void ht_resize(ht *table, const size_t base_capacity) {
   table->items = new_ht->items;
   new_ht->items = tmp_items;
 
-  ht_del_ht(new_ht);
+  ht_destroy(new_ht);
 }
 
 /*
@@ -179,22 +218,6 @@ static void ht_resize_up(ht *table) {
 static void ht_resize_down(ht *table) {
   const size_t new_size = table->base_capacity / 2;
   ht_resize(table, new_size);
-}
-
-void ht_del_ht(ht *table) {
-  if (table == NULL)
-    return;
-
-  if (table->items != NULL) {
-    for (size_t i = 0; i < table->capacity; i++) {
-      ht_item *item = table->items[i];
-      if (item != NULL && item != &HT_DELETED_ITEM) { // Skip sentinel
-        ht_del_item(item);
-      }
-    }
-    free(table->items);
-  }
-  free(table);
 }
 
 void ht_insert(ht *table, const char *key, const void *value) {

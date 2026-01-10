@@ -5,7 +5,7 @@
 #ifndef AST
 #define AST
 
-#include "arena.h"
+#include "ds/arena.h"
 #include "ds/dynamic_array.h"
 #include "token.h"
 #include "var.h"
@@ -59,7 +59,7 @@ typedef struct term_node {
   term_kind kind;
   size_t line;
   union {
-    token_value value;
+    token_literal_value value;
     variable identifier;
     array_access_node array_access;
     array_literal_node array_literal;
@@ -270,22 +270,22 @@ typedef struct instr_node {
  * @struct ast: Contains the abstract syntax tree for a compilation unit.
  */
 typedef struct ast {
-  mem_arena *arena;
+  mem_arena arena;
   dynamic_array instrs;
   size_t loop_counter;
 } ast;
 
 /*
- * @brief: allocates an ast struct.
+ * @brief: initializes an ast struct.
  */
-ast *create_ast();
+void ast_init(ast *a);
 
 /*
  * @brief: Frees all memory associated with an ast.
  *
- * @param program_ast: pointer to an ast
+ * @param program_ast: pointer to an initialized ast
  */
-void destroy_ast(ast *program_ast);
+void free_ast(ast *program_ast);
 
 /*
  * @brief: prints all information about a single instruction.

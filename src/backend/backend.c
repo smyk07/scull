@@ -1,29 +1,13 @@
 #include "backend/backend.h"
 #include "backend/llvm/llvm.h"
-#include "utils.h"
 
 #include <stdlib.h>
 
-struct backend {
-  /*
-   * arguments to these function pointers will be resolved and made explicit
-   * later on, just trying to setup a basic boilerplate right now.
-   */
-  void (*init_function)(cstate *cst, fstate *fst);
-  void (*compile_function)(cstate *cst, fstate *fst);
-  void (*emit_output_function)(cstate *cst, fstate *fst);
-  void (*cleanup_function)(cstate *cst, fstate *fst);
-};
-
-backend *backend_create() {
-  backend *b = scu_checked_malloc(sizeof(backend));
-
-  b->init_function = llvm_backend_init;
-  b->compile_function = llvm_backend_compile;
-  b->emit_output_function = llvm_backend_emit;
-  b->cleanup_function = llvm_backend_cleanup;
-
-  return b;
+void backend_init(backend *backend) {
+  backend->init_function = llvm_backend_init;
+  backend->compile_function = llvm_backend_compile;
+  backend->emit_output_function = llvm_backend_emit;
+  backend->cleanup_function = llvm_backend_cleanup;
 }
 
 void backend_compile(backend *backend, cstate *cst, fstate *fst) {
@@ -40,7 +24,7 @@ void backend_compile(backend *backend, cstate *cst, fstate *fst) {
     backend->cleanup_function(cst, fst);
 }
 
-void backend_destroy(backend *backend) {
+void backend_free(backend *backend) {
   if (!backend)
     return;
 
@@ -48,6 +32,4 @@ void backend_destroy(backend *backend) {
   backend->compile_function = NULL;
   backend->emit_output_function = NULL;
   backend->cleanup_function = NULL;
-
-  free(backend);
 }

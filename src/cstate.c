@@ -1,5 +1,6 @@
 #include "cstate.h"
 #include "backend/backend.h"
+#include "ds/arena.h"
 #include "ds/dynamic_array.h"
 #include "fstate.h"
 #include "utils.h"
@@ -12,9 +13,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-cstate *cstate_create_from_args(int argc, char *argv[]) {
-  cstate *cst = scu_checked_malloc(sizeof(cstate));
-
+void cstate_init(cstate *cst, int argc, char *argv[]) {
   if (argc <= 1) {
     /*
      * Default output.
@@ -53,13 +52,14 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
     printf("\n");
     */
 
-    free(cst);
     exit(1);
   }
 
   int i = 1;
+
   dynamic_array filenames;
   dynamic_array_init(&filenames, sizeof(char *));
+
   cst->output_filepath = NULL;
   cst->include_dir = NULL;
   cst->llvm_target_triple = LLVMGetDefaultTargetTriple();
@@ -76,6 +76,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
       if (i + 1 >= argc) {
         scu_perror("Missing target after %s\n", arg);
+        free(cst);
         exit(1);
       }
 
@@ -90,6 +91,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
         if (err)
           LLVMDisposeMessage(err);
         LLVMDisposeMessage(target_str);
+        free(cst);
         exit(1);
       }
 
@@ -103,11 +105,13 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
     if (strcmp(arg, "--output") == 0 || strcmp(arg, "-o") == 0) {
       if (i + 1 >= argc) {
         scu_perror("Missing filename after %s\n", arg);
+        free(cst);
         exit(1);
       }
 
       if (cst->output_filepath != NULL) {
         scu_perror("Output specified more than once: %s\n", argv[i + 1]);
+        free(cst);
         exit(1);
       }
 
@@ -120,23 +124,27 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
     if (strcmp(arg, "--include_dir") == 0 || strcmp(arg, "-i") == 0) {
       if (i + 1 >= argc) {
         scu_perror("Missing directory path after %s\n", arg);
+        free(cst);
         exit(1);
       }
 
       if (cst->include_dir != NULL) {
         scu_perror("Include directory specified more than once: %s\n",
                    argv[i + 1]);
+        free(cst);
         exit(1);
       }
 
       struct stat st;
       if (stat(argv[i + 1], &st) != 0) {
         scu_perror("Include directory does not exist: %s\n", argv[i + 1]);
+        free(cst);
         exit(1);
       }
 
       if (!S_ISDIR(st.st_mode)) {
         scu_perror("Path is not a directory: %s\n", argv[i + 1]);
+        free(cst);
         exit(1);
       }
 
@@ -173,6 +181,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
     }
 
     scu_perror("Unknown option: %s\n", arg);
+    free(cst);
     exit(1);
   }
 
@@ -181,6 +190,7 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
 
   if (filenames.count == 0) {
     scu_perror("Missing input filename\n");
+    free(cst);
     exit(1);
   }
 
@@ -190,51 +200,47 @@ cstate *cstate_create_from_args(int argc, char *argv[]) {
     cst->output_filepath = scu_extract_name(first_filename);
     if (!cst->output_filepath) {
       scu_perror("Failed to extract filename.\n");
+      free(cst);
       exit(1);
     }
   }
 
+  arena_init(&cst->file_arena, 1 << 9);
   dynamic_array_init(&cst->files, sizeof(fstate *));
 
   for (size_t i = 0; i < filenames.count; i++) {
     char *filepath;
     dynamic_array_get(&filenames, i, &filepath);
 
-    fstate *fst = create_new_fstate(filepath);
-    if (fst == NULL) {
-      scu_perror("Failed to create fstate for: %s\n", filepath);
-      exit(1);
-    }
+    fstate *fst = arena_push_struct(&cst->file_arena, fstate);
+    fstate_init(fst, filepath);
 
     dynamic_array_append(&cst->files, &fst);
     free(filepath);
   }
 
   dynamic_array_free(&filenames);
-
-  return cst;
 }
 
-void cstate_free(cstate *s) {
-  if (s == NULL)
+void cstate_free(cstate *cst) {
+  if (cst == NULL)
     return;
 
-  if (s->include_dir != NULL)
-    free(s->include_dir);
+  if (cst->include_dir != NULL)
+    free(cst->include_dir);
 
-  if (s->output_filepath != NULL)
-    free(s->output_filepath);
+  if (cst->output_filepath != NULL)
+    free(cst->output_filepath);
 
-  if (s->llvm_target_triple != NULL)
-    free(s->llvm_target_triple);
+  if (cst->llvm_target_triple != NULL)
+    free(cst->llvm_target_triple);
 
-  for (size_t i = 0; i < s->files.count; i++) {
+  for (size_t i = 0; i < cst->files.count; i++) {
     fstate *fst;
-    dynamic_array_get(&s->files, i, &fst);
-    free_fstate(fst);
+    dynamic_array_get(&cst->files, i, &fst);
+    fstate_free(fst);
+    arena_free(&cst->file_arena);
   }
 
-  dynamic_array_free(&s->files);
-
-  free(s);
+  dynamic_array_free(&cst->files);
 }

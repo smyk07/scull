@@ -9,7 +9,6 @@
 !/tests/
 !/tests/**
 !/examples/
-!/examples/**
 !/logo/
 !/logo/**
 !*.scl

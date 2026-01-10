@@ -28,20 +28,35 @@ typedef struct ht {
 } ht;
 
 /*
- * @brief: initialize a new hash table.
+ * @brief: create a new hash table.
  *
  * @param value_size: size of the value (void *) of each item.
  *
  * @return: pointer to the newly initialized hash table.
  */
-ht *ht_new(const size_t value_size);
+ht *ht_create(const size_t value_size);
 
 /*
- * @brief: delete an existing hash table.
+ * @brief: destroy an existing hash table.
  *
  * @param table: pointer to an initialized ht (hash table) struct.
  */
-void ht_del_ht(ht *table);
+void ht_destroy(ht *table);
+
+/*
+ * @brief: initialize a new hash table.
+ *
+ * @param table: pointer to an already allocated ht
+ * @param value_size: size of the value (void *) of each item.
+ */
+void ht_init(ht *table, const size_t value_size);
+
+/*
+ * @brief: free all memory associated with a ht
+ *
+ * @param table: pointer to an already allocated and initialized ht
+ */
+void ht_free(ht *table);
 
 /*
  * @brief: insert a key value pair into the hash table.

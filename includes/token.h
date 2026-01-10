@@ -89,21 +89,21 @@ typedef enum token_kind {
 } token_kind;
 
 /*
- * @union token_value: holds the "value" of any particular token. Values can be
- * integers, characters, or strings for labels.
+ * @union token_literal_value: holds the "value" of any particular literal
+ * token. Values can be integers, characters, or strings for labels.
  */
-typedef union token_value {
+typedef union token_literal_value {
   int integer;
   char character;
   char *str;
-} token_value;
+} token_literal_value;
 
 /*
  * @struct token: reprents a token and its metadata.
  */
 typedef struct token {
   token_kind kind;
-  token_value value;
+  token_literal_value value;
   size_t line; // <-- Where the token is placed in the source buffer.
 } token;
 

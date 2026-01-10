@@ -1,6 +1,6 @@
 #include "parser.h"
-#include "arena.h"
 #include "ast.h"
+#include "ds/arena.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
 #include "lexer.h"
@@ -13,9 +13,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static mem_arena *parser_arena;
+static mem_arena *ast_arena;
 
-void parser_init(dynamic_array *tokens, parser *p) {
+/*
+ * @struct parser: represents the parser's internal state.
+ */
+typedef struct parser {
+  dynamic_array tokens;
+  size_t index;
+} parser;
+
+/*
+ * @brief: Initializes the parser struct.
+ *
+ * @param tokens: pointer to dynamic_array of tokens.
+ * @param p: pointer to an uninitialized parser struct.
+ */
+static void parser_init(dynamic_array *tokens, parser *p) {
   p->tokens = *tokens;
   p->index = 0;
 }
@@ -145,7 +159,7 @@ static expr_node *parse_factor(parser *p) {
   if (token.kind == TOKEN_INT || token.kind == TOKEN_CHAR ||
       token.kind == TOKEN_IDENTIFIER || token.kind == TOKEN_POINTER ||
       token.kind == TOKEN_STRING || token.kind == TOKEN_ADDRESS_OF) {
-    expr_node *node = arena_push_struct(parser_arena, expr_node);
+    expr_node *node = arena_push_struct(ast_arena, expr_node);
     node->kind = EXPR_TERM;
     node->line = token.line;
 
@@ -252,7 +266,7 @@ static expr_node *parse_term(parser *p) {
       parser_advance(p);
       expr_node *right = parse_factor(p);
 
-      expr_node *parent = arena_push_struct(parser_arena, expr_node);
+      expr_node *parent = arena_push_struct(ast_arena, expr_node);
 
       parent->line = token.line;
 
@@ -289,7 +303,7 @@ static expr_node *parse_expr(parser *p) {
       parser_advance(p);
       expr_node *right = parse_term(p);
 
-      expr_node *parent = arena_push_struct(parser_arena, expr_node);
+      expr_node *parent = arena_push_struct(ast_arena, expr_node);
       parent->kind = (token.kind == TOKEN_ADD) ? EXPR_ADD : EXPR_SUBTRACT;
       parent->line = token.line;
       parent->binary.left = left;
@@ -627,7 +641,7 @@ static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
     instr->if_.kind = IF_SINGLE_INSTR;
     parser_advance(p);
 
-    instr->if_.instr = arena_push_struct(parser_arena, instr_node);
+    instr->if_.instr = arena_push_struct(ast_arena, instr_node);
     parse_instr(p, instr->if_.instr, loop_counter);
   } else if (token.kind == TOKEN_LBRACE) {
     instr->if_.kind = IF_MULTI_INSTR;
@@ -637,7 +651,7 @@ static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
 
     parser_current(p, &token);
     while (token.kind != TOKEN_RBRACE && token.kind != TOKEN_END) {
-      instr_node *new_instr = arena_push_struct(parser_arena, instr_node);
+      instr_node *new_instr = arena_push_struct(ast_arena, instr_node);
       parse_instr(p, new_instr, loop_counter);
       dynamic_array_append(&instr->if_.instrs, new_instr);
 
@@ -741,7 +755,7 @@ static void parse_loop(parser *p, instr_node *instr, loop_kind kind,
       parser_current(p, &token);
       continue;
     }
-    instr_node *_instr = arena_push_struct(parser_arena, instr_node);
+    instr_node *_instr = arena_push_struct(ast_arena, instr_node);
 
     parse_instr(p, _instr, loop_counter);
     dynamic_array_append(&instr->loop.instrs, _instr);
@@ -864,7 +878,7 @@ static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter) {
   if (token.kind == TOKEN_LBRACE) {
     instr->kind = INSTR_FN_DEFINE;
     instr->fn_define_node.kind = FN_DEFINED;
-    instr->fn_define_node.defined.variables = ht_new(sizeof(variable));
+    instr->fn_define_node.defined.variables = ht_create(sizeof(variable));
     dynamic_array_init(&instr->fn_define_node.defined.instrs,
                        sizeof(instr_node));
 
@@ -873,7 +887,7 @@ static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter) {
       parser_current(p, &token);
       if (token.kind == TOKEN_RBRACE)
         break;
-      instr_node *_instr = arena_push_struct(parser_arena, instr_node);
+      instr_node *_instr = arena_push_struct(ast_arena, instr_node);
       parse_instr(p, _instr, loop_counter);
       dynamic_array_append(&instr->fn_define_node.defined.instrs, _instr);
     }
@@ -979,24 +993,26 @@ static void parse_instr(parser *p, instr_node *instr, size_t *loop_counter) {
   }
 }
 
-void parser_parse_program(parser *p, ast *program) {
-  parser_arena = program->arena;
+void parser_parse_program(dynamic_array *tokens, ast *program) {
+  ast_arena = &program->arena;
+  parser p;
+  parser_init(tokens, &p);
 
   token token = {0};
-  parser_current(p, &token);
+  parser_current(&p, &token);
 
   while (token.kind != TOKEN_END) {
     if (token.kind == TOKEN_COMMENT) {
-      parser_advance(p);
-      parser_current(p, &token);
+      parser_advance(&p);
+      parser_current(&p, &token);
       continue;
     }
-    instr_node *instr = arena_push_struct(parser_arena, instr_node);
-    parse_instr(p, instr, &program->loop_counter);
+    instr_node *instr = arena_push_struct(ast_arena, instr_node);
+    parse_instr(&p, instr, &program->loop_counter);
     scu_check_errors();
     dynamic_array_append(&program->instrs, instr);
-    parser_current(p, &token);
+    parser_current(&p, &token);
   }
 
-  parser_arena = NULL;
+  ast_arena = NULL;
 }

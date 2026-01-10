@@ -10,23 +10,27 @@
 
 #include <stdint.h>
 
-typedef struct mem_arena mem_arena;
+typedef struct mem_arena {
+  uint64_t capacity;
+  uint64_t pos;
+  uint8_t *buffer;
+} mem_arena;
 
 /*
- * @brief: Creates a new memory arena with the specified capacity.
+ * @brief: Initializes an already allocated memory arena with the specified
+ * capacity.
  *
+ * @param arena: pointer to a mem_arena
  * @param capacity: Maximum size in bytes that the arena can hold
- *
- * @return: Pointer to newly allocated arena
  */
-mem_arena *arena_create(uint64_t capacity);
+void arena_init(mem_arena *arena, uint64_t capacity);
 
 /*
- * @brief: Frees all associated memory with an existing arena.
+ * @brief: Frees a mem_arena
  *
- * @param arena: Pointer to the arena to be destroyed
+ * @param arena: pointer to a mem_arena
  */
-void arena_destroy(mem_arena *arena);
+void arena_free(mem_arena *arena);
 
 /*
  * @brief: Allocates memory from the arena.

@@ -1,17 +1,15 @@
 #include "ast.h"
+#include "ds/arena.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
-#include "utils.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 
-ast *create_ast() {
-  ast *a = scu_checked_malloc(sizeof(ast));
-  a->arena = arena_create(4 << 20); // allocate 4 megabytes for now
+void ast_init(ast *a) {
+  arena_init(&a->arena, 4 << 20); // allocate 4 megabytes for now
   dynamic_array_init(&a->instrs, sizeof(instr_node));
   a->loop_counter = 0;
-  return a;
 }
 
 /*
@@ -634,7 +632,7 @@ static void free_instr(instr_node *instr) {
     break;
 
   case INSTR_FN_DEFINE:
-    ht_del_ht(instr->fn_define_node.defined.variables);
+    ht_destroy(instr->fn_define_node.defined.variables);
     free_instrs(&instr->fn_define_node.defined.instrs);
   case INSTR_FN_DECLARE:
     dynamic_array_free(&instr->fn_declare_node.returntypes);
@@ -667,9 +665,9 @@ static void free_instrs(dynamic_array *instrs) {
   dynamic_array_free(instrs);
 }
 
-void destroy_ast(ast *program_ast) {
+void free_ast(ast *program_ast) {
+  if (program_ast == NULL)
+    return;
   free_instrs(&program_ast->instrs);
-  dynamic_array_free(&program_ast->instrs);
-  arena_destroy(program_ast->arena);
-  free(program_ast);
+  arena_free(&program_ast->arena);
 }

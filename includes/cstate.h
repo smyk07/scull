@@ -3,7 +3,7 @@
  * one build unit.
  *
  * Usage:
- * cstate *state = cstate_create_from_args(argc, argv);
+ * cstate *state = cstate_init(&cst, argc, argv);
  * ...
  * cstate_free(state);
  */
@@ -11,6 +11,7 @@
 #ifndef CSTATE_H
 #define CSTATE_H
 
+#include "ds/arena.h"
 #include "ds/dynamic_array.h"
 
 #include <stdbool.h>
@@ -54,6 +55,11 @@ typedef struct coptions {
  */
 typedef struct cstate {
   /*
+   * Arena for the fstates
+   */
+  mem_arena file_arena;
+
+  /*
    * An array of fstates.
    */
   dynamic_array files;
@@ -78,18 +84,16 @@ typedef struct cstate {
 } cstate;
 
 /*
- * @brief: Create compiler state from CLI arguments.
+ * @brief: Initialize a already allocated compiler state from CLI arguments.
  *
  * @param argc: count of args
  * @param argv: array of arguments (string)
  *
- * @return: malloc'd cstate struct object pointer which the caller would have to
- * manually free.
  */
-cstate *cstate_create_from_args(int argc, char *argv[]);
+void cstate_init(cstate *cst, int argc, char *argv[]);
 
 /*
- * @brief: Free / Destroy the compiler state after it is used.
+ * @brief: Free all associated memory of a compiler state
  *
  * @param s: pointer to malloc'd cstate.
  */

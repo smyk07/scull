@@ -10,14 +10,23 @@
 typedef struct cstate cstate;
 typedef struct fstate fstate;
 
-typedef struct backend backend;
+typedef struct backend {
+  /*
+   * arguments to these function pointers will be resolved and made explicit
+   * later on, just trying to setup a basic boilerplate right now.
+   */
+  void (*init_function)(cstate *cst, fstate *fst);
+  void (*compile_function)(cstate *cst, fstate *fst);
+  void (*emit_output_function)(cstate *cst, fstate *fst);
+  void (*cleanup_function)(cstate *cst, fstate *fst);
+} backend;
 
 /*
- * @brief: Creates and initializes a new backend instance.
+ * @brief: Initialize a new backend instance.
  *
  * @return: Pointer to newly allocated backend
  */
-backend *backend_create();
+void backend_init(backend *backend);
 
 /*
  * @brief: Compiles the parsed program using the backend.
@@ -33,6 +42,6 @@ void backend_compile(backend *backend, cstate *cst, fstate *fst);
  *
  * @param backend: Pointer to the backend to be freed
  */
-void backend_destroy(backend *backend);
+void backend_free(backend *backend);
 
 #endif // !BACKEND_H
