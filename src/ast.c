@@ -7,7 +7,7 @@
 #include <stdlib.h>
 
 void ast_init(ast *a) {
-  arena_init(&a->arena, 4 << 20); // allocate 4 megabytes for now
+  arena_init(&a->arena, 5 << 20); // allocate 5 megabytes for now
   dynamic_array_init(&a->instrs, sizeof(instr_node));
   a->loop_counter = 0;
 }
@@ -665,7 +665,7 @@ static void free_instrs(dynamic_array *instrs) {
   dynamic_array_free(instrs);
 }
 
-void free_ast(ast *program_ast) {
+void ast_free(ast *program_ast) {
   if (program_ast == NULL)
     return;
   free_instrs(&program_ast->instrs);

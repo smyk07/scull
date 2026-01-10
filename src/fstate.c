@@ -41,7 +41,7 @@ void fstate_free(fstate *fst) {
   free_tokens(&fst->tokens);
   dynamic_array_free(&fst->tokens);
 
-  free_ast(&fst->program_ast);
+  ast_free(&fst->program_ast);
 
   stack_free(&fst->loops);
 

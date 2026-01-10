@@ -233,7 +233,8 @@ typedef struct fn_node {
     } defined;
 
     struct {
-      // JUST A PLACEHOLDER, WILL APPEAR IN WARNINGS
+      // JUST A PLACEHOLDER, MIGHT APPEAR IN WARNINGS
+      uint8_t *placeholder_buffer;
     } declared;
   };
 } fn_node;
@@ -285,7 +286,7 @@ void ast_init(ast *a);
  *
  * @param program_ast: pointer to an initialized ast
  */
-void free_ast(ast *program_ast);
+void ast_free(ast *program_ast);
 
 /*
  * @brief: prints all information about a single instruction.
