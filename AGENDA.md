@@ -16,15 +16,24 @@
 
 - [x] NEC Parser bug fixes and proper memory management
 
+- [x] NEC Better error handling
+
+- [ ] NEC Test cases
+  - Lexer
+  - Parser
+  - Semantic
+  - Codegen / Backend
+  - End-to-End
+
 - [ ] NEC Arenas / Allocators (for the full compiler) instead of the current allocation method
   - [ ] Better arena implementation with chaining
+
+- [x] NEC Seperate stack based and heap based allocations, see whats really needed and whats unnecessary in sclc
 
 - [ ] NEC only emit the output file in current directory unless specified, else use `/tmp`
 
 - [ ] NEC Develop C Backend
   - Language related changes which would facilitate 1:1 C translation are needed (basic types, structs, unions, enums, memory management, etc)
-
-- [ ] NEC Test cases
 
 - [ ] EXP Bootstrapping Strategy: (inspired from Zig)
   - Generated C code (one file) of the compiler source ships with release (need custom c backend for this)
@@ -35,6 +44,8 @@
 ## Language Related
 
 - [x] NEC Strings
+
+- [ ] NEC Negative numbers and u32 and i32 - like types
 
 - [ ] NEC For loop
 
