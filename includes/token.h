@@ -5,6 +5,8 @@
 #ifndef TOKEN
 #define TOKEN
 
+#include "ds/dynamic_array.h"
+
 #include <stddef.h>
 
 /*
@@ -106,5 +108,28 @@ typedef struct token {
   token_literal_value value;
   size_t line; // <-- Where the token is placed in the source buffer.
 } token;
+
+/*
+ * @brief: Converts a token_kind enum value to its string representation.
+ *
+ * @param kind: token_kind enum value.
+ * @return: string representation of the token.
+ */
+const char *lexer_token_kind_to_str(token_kind kind);
+
+/*
+ * @brief: Print the whole token stream, required for debugging.
+ *
+ * @param tokens: dynamic_array of tokens.
+ */
+void lexer_print_tokens(dynamic_array *tokens);
+
+/*
+ * @brief: Free / Destroy tokens before termination. This function is needed due
+ * to there being malloc'd strings in token->value.
+ *
+ * @param tokens: dynamic_array of tokens.
+ */
+void free_tokens(dynamic_array *tokens);
 
 #endif // !TOKEN
