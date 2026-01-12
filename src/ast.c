@@ -173,6 +173,25 @@ static void check_rel_node_and_print(rel_node *rel) {
   }
 }
 
+static void print_cond_block(cond_block_node *block, char *label) {
+  if (!block)
+    return;
+
+  printf("%s:\n", label);
+
+  if (block->kind == COND_SINGLE_INSTR) {
+    printf("\t");
+    print_instr(block->single);
+  } else {
+    for (unsigned int i = 0; i < block->multi.count; i++) {
+      instr_node instr;
+      dynamic_array_get(&block->multi, i, &instr);
+      printf("\t");
+      print_instr(&instr);
+    }
+  }
+}
+
 /*
  * @brief: print an instruction.
  *
@@ -256,24 +275,16 @@ void print_instr(instr_node *instr) {
     printf("}\n");
     break;
 
-  case INSTR_IF:
+  case INSTR_IF: {
+    if_node *ifn = &instr->if_;
     printf("if ");
-    check_rel_node_and_print(&instr->if_.rel);
-    switch (instr->if_.kind) {
-    case IF_SINGLE_INSTR:
-      printf("\t then: ");
-      print_instr(instr->if_.instr);
-      break;
-    case IF_MULTI_INSTR:
-      for (unsigned int i = 0; i < instr->if_.instrs.count; i++) {
-        instr_node _instr;
-        dynamic_array_get(&instr->if_.instrs, i, &_instr);
-        printf("\t");
-        print_instr(&_instr);
-      }
-      break;
-    }
+    check_rel_node_and_print(&ifn->rel);
+    printf("\n");
+    print_cond_block(&ifn->then, "then");
+    if (ifn->else_)
+      print_cond_block(ifn->else_, "else");
     break;
+  }
 
   case INSTR_GOTO:
     printf("goto: %s\n", instr->goto_.label);
@@ -459,83 +470,6 @@ void print_ast(ast *program_ast) {
   }
 }
 
-/*
-static void free_fn_calls(ast *program);
-
-static void free_ret_node(ast *program);
-
-static void free_loops(ast *program);
-
-static void free_if_instrs(ast *program) {
-  for (unsigned int i = 0; i < program->instrs.count; i++) {
-    instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
-    if (instr->kind == INSTR_IF && instr->if_.kind == IF_MULTI_INSTR) {
-      ast temp = {NULL, instr->if_.instrs, 0};
-      free_if_instrs(&temp);
-      free_fn_calls(&temp);
-      free_loops(&temp);
-      free_ret_node(&temp);
-      dynamic_array_free(&instr->if_.instrs);
-    }
-  }
-}
-
-static void free_loops(ast *program) {
-  for (unsigned int i = 0; i < program->instrs.count; i++) {
-    instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
-    if (instr->kind == INSTR_LOOP) {
-      ast temp = {NULL, instr->loop.instrs, 0};
-      free_if_instrs(&temp);
-      free_fn_calls(&temp);
-      free_loops(&temp);
-      free_ret_node(&temp);
-      dynamic_array_free(&instr->loop.instrs);
-    }
-  }
-}
-
-static void free_fn_calls(ast *program) {
-  for (unsigned int i = 0; i < program->instrs.count; i++) {
-    instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
-    if (instr->kind == INSTR_FN_CALL) {
-      dynamic_array_free(&instr->fn_call.parameters);
-    }
-  }
-}
-
-static void free_ret_node(ast *program) {
-  for (unsigned int i = 0; i < program->instrs.count; i++) {
-    instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
-    if (instr->kind == INSTR_RETURN) {
-      dynamic_array_free(&instr->ret_node.returnvals);
-    }
-  }
-}
-
-static void free_fns(ast *program) {
-  for (unsigned int i = 0; i < program->instrs.count; i++) {
-    instr_node *instr = program->instrs.items + (i * program->instrs.item_size);
-    if (instr->kind == INSTR_FN_DECLARE || instr->kind == INSTR_FN_DEFINE) {
-      dynamic_array_free(&instr->fn_declare_node.parameters);
-      dynamic_array_free(&instr->fn_declare_node.returntypes);
-
-      if (instr->kind == INSTR_FN_DEFINE) {
-        ht_del_ht(instr->fn_define_node.defined.variables);
-
-        ast temp = {NULL, instr->fn_define_node.defined.instrs, 0};
-
-        free_if_instrs(&temp);
-        free_fn_calls(&temp);
-        free_loops(&temp);
-        free_ret_node(&temp);
-
-        dynamic_array_free(&temp.instrs);
-      }
-    }
-  }
-}
-*/
-
 static void free_expr_node(expr_node *expr);
 
 static void free_exprs(dynamic_array *exprs);
@@ -594,6 +528,18 @@ static void free_rel_node(rel_node *rel) {
 
 static void free_instrs(dynamic_array *instrs);
 
+static void free_instr(instr_node *instr);
+
+static void free_cond_block_node(cond_block_node *block) {
+  if (!block)
+    return;
+
+  if (block->kind == COND_MULTI_INSTR)
+    free_instrs(&block->multi);
+  else
+    free_instr(block->single);
+}
+
 static void free_instr(instr_node *instr) {
   switch (instr->kind) {
   case INSTR_INITIALIZE:
@@ -620,10 +566,8 @@ static void free_instr(instr_node *instr) {
 
   case INSTR_IF:
     free_rel_node(&instr->if_.rel);
-    if (instr->if_.kind == IF_MULTI_INSTR)
-      free_instrs(&instr->if_.instrs);
-    else
-      free_instr(instr->if_.instr);
+    free_cond_block_node(&instr->if_.then);
+    free_cond_block_node(instr->if_.else_);
     break;
 
   case INSTR_LOOP:

@@ -9,6 +9,8 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "goto";
   case TOKEN_IF:
     return "if";
+  case TOKEN_ELSE:
+    return "else";
   case TOKEN_THEN:
     return "then";
   case TOKEN_LABEL:

@@ -470,6 +470,11 @@ static token lexer_next_token(lexer *l) {
       return (token){.kind = TOKEN_IF, .value.str = NULL, .line = l->line};
     }
 
+    else if (strcmp(value, "else") == 0) {
+      free(value);
+      return (token){.kind = TOKEN_ELSE, .value.str = NULL, .line = l->line};
+    }
+
     else if (strcmp(value, "then") == 0) {
       free(value);
       return (token){.kind = TOKEN_THEN, .value.str = NULL, .line = l->line};

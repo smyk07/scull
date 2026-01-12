@@ -18,6 +18,7 @@ typedef enum token_kind {
    */
   TOKEN_GOTO = 0,
   TOKEN_IF,
+  TOKEN_ELSE,
   TOKEN_THEN,
   TOKEN_TYPE_INT,
   TOKEN_TYPE_CHAR,

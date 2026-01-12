@@ -211,6 +211,27 @@ static void rel_check_variables(rel_node *rel, ht *variables, ht *functions) {
   term_check_variables(&rel->comparison.rhs, variables, functions);
 }
 
+static void instr_check_variables(instr_node *instr, ht *variables,
+                                  ht *functions);
+
+static void cond_block_check_variables(cond_block_node *blk, ht *variables,
+                                       ht *functions) {
+  if (!blk)
+    return;
+
+  if (blk->kind == COND_SINGLE_INSTR) {
+    instr_check_variables(blk->single, variables, functions);
+    instr_typecheck(blk->single, variables, functions);
+  } else {
+    for (size_t i = 0; i < blk->multi.count; i++) {
+      instr_node instr_;
+      dynamic_array_get(&blk->multi, i, &instr_);
+      instr_check_variables(&instr_, variables, functions);
+      instr_typecheck(&instr_, variables, functions);
+    }
+  }
+}
+
 /*
  * @brief: check variables in an individual instruction
  *
@@ -267,7 +288,9 @@ static void instr_check_variables(instr_node *instr, ht *variables,
 
   case INSTR_IF:
     rel_check_variables(&instr->if_.rel, variables, functions);
-    instr_check_variables(instr->if_.instr, variables, functions);
+    cond_block_check_variables(&instr->if_.then, variables, functions);
+    if (instr->if_.else_)
+      cond_block_check_variables(instr->if_.else_, variables, functions);
     break;
 
   case INSTR_LOOP:
@@ -331,51 +354,75 @@ static void check_goto(dynamic_array *labels, instr_node *instr) {
   }
 }
 
+static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels);
+
+static void cond_block_check_labels(cond_block_node *block,
+                                    dynamic_array *labels) {
+  if (!block)
+    return;
+
+  if (block->kind == COND_SINGLE_INSTR) {
+    instr_node *instr = block->single;
+
+    if (instr->kind == INSTR_LABEL)
+      check_label(labels, instr);
+    else if (instr->kind == INSTR_GOTO)
+      check_goto(labels, instr);
+    else if (instr->kind == INSTR_IF)
+      instrs_check_labels(
+          &((dynamic_array){.items = instr, .count = 1, .capacity = 1}),
+          labels);
+  } else {
+    for (size_t i = 0; i < block->multi.count; i++) {
+      instr_node instr;
+      dynamic_array_get(&block->multi, i, &instr);
+
+      if (instr.kind == INSTR_LABEL)
+        check_label(labels, &instr);
+      else if (instr.kind == INSTR_GOTO)
+        check_goto(labels, &instr);
+      else if (instr.kind == INSTR_IF)
+        cond_block_check_labels(&instr.if_.then, labels),
+            cond_block_check_labels(instr.if_.else_, labels);
+    }
+  }
+}
+
 /*
  * @brief: check for declaration of labels AND the use of labels in goto
  * instructions
  *
  * @param instr: pointer to an instr_node.
  * @param labels: pointer to the labels dynamic_array.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels) {
   // check labels first
-  for (unsigned int i = 0; i < instrs->count; i++) {
+  for (size_t i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
 
-    if (instr.kind == INSTR_LABEL) {
+    if (instr.kind == INSTR_LABEL)
       check_label(labels, &instr);
-    }
   }
 
   // then check goto
-  for (unsigned int i = 0; i < instrs->count; i++) {
+  for (size_t i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
 
-    if (instr.kind == INSTR_GOTO) {
+    if (instr.kind == INSTR_GOTO)
       check_goto(labels, &instr);
-    }
   }
 
   // then check if
-  for (unsigned int i = 0; i < instrs->count; i++) {
+  for (size_t i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
 
     if (instr.kind == INSTR_IF) {
-      switch (instr.if_.instr->kind) {
-      case INSTR_GOTO:
-        check_goto(labels, instr.if_.instr);
-        break;
-      case INSTR_LABEL:
-        check_label(labels, instr.if_.instr);
-        break;
-      default:
-        break;
-      }
+      cond_block_check_labels(&instr.if_.then, labels);
+      if (instr.if_.else_)
+        cond_block_check_labels(instr.if_.else_, labels);
     }
   }
 }

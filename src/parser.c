@@ -3,7 +3,6 @@
 #include "ds/arena.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
-#include "lexer.h"
 #include "token.h"
 #include "utils.h"
 #include "var.h"
@@ -619,41 +618,37 @@ static void parse_assign(parser *p, instr_node *instr) {
 }
 
 /*
- * @brief: parse an if instruction.
+ * @brief: parse a conditional block.
  *
  * @param p: pointer to the parser state.
- * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
+ * @param block: pointer to the condiitonal block.
+ * @param loop_counter: tracks loops
  */
-static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
+static void parse_cond_block(parser *p, cond_block_node *block,
+                             size_t *loop_counter) {
   token token = {0};
-
-  instr->kind = INSTR_IF;
-
-  parser_advance(p);
-
-  parse_rel(p, &instr->if_.rel);
-
   parser_current(p, &token);
-  instr->line = token.line;
 
   if (token.kind == TOKEN_THEN) {
-    instr->if_.kind = IF_SINGLE_INSTR;
+    block->kind = COND_SINGLE_INSTR;
     parser_advance(p);
 
-    instr->if_.instr = arena_push_struct(ast_arena, instr_node);
-    parse_instr(p, instr->if_.instr, loop_counter);
-  } else if (token.kind == TOKEN_LBRACE) {
-    instr->if_.kind = IF_MULTI_INSTR;
+    block->single = arena_push_struct(ast_arena, instr_node);
+    parse_instr(p, block->single, loop_counter);
+    return;
+  }
+
+  if (token.kind == TOKEN_LBRACE) {
+    block->kind = COND_MULTI_INSTR;
     parser_advance(p);
 
-    dynamic_array_init(&instr->if_.instrs, sizeof(instr_node));
+    dynamic_array_init(&block->multi, sizeof(instr_node));
 
     parser_current(p, &token);
     while (token.kind != TOKEN_RBRACE && token.kind != TOKEN_END) {
       instr_node *new_instr = arena_push_struct(ast_arena, instr_node);
       parse_instr(p, new_instr, loop_counter);
-      dynamic_array_append(&instr->if_.instrs, new_instr);
+      dynamic_array_append(&block->multi, new_instr);
 
       parser_current(p, &token);
     }
@@ -663,10 +658,42 @@ static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
                  lexer_token_kind_to_str(token.kind), token.line);
       return;
     }
+
     parser_advance(p);
-  } else {
-    scu_perror("Expected 'then' or '{', found %s [line %d]\n",
-               lexer_token_kind_to_str(token.kind), token.line);
+    return;
+  }
+
+  scu_perror("Expected 'then' or '{', found %s [line %d]\n",
+             lexer_token_kind_to_str(token.kind), token.line);
+}
+
+/*
+ * @brief: parse an if instruction.
+ *
+ * @param p: pointer to the parser state.
+ * @param instr: pointer to a newly malloc'd instr struct.
+ * @param loop_counter: tracks loops
+ */
+static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
+  token token = {0};
+
+  instr->kind = INSTR_IF;
+  instr->if_.else_ = NULL;
+
+  parser_advance(p);
+  parse_rel(p, &instr->if_.rel);
+
+  parser_current(p, &token);
+  instr->line = token.line;
+
+  parse_cond_block(p, &instr->if_.then, loop_counter);
+
+  parser_current(p, &token);
+  if (token.kind == TOKEN_ELSE) {
+    parser_advance(p);
+
+    instr->if_.else_ = arena_push_struct(ast_arena, cond_block_node);
+    parse_cond_block(p, instr->if_.else_, loop_counter);
   }
 }
 

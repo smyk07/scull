@@ -181,15 +181,25 @@ typedef struct assign_to_array_subscript_node {
   expr_node *expr_to_assign;
 } assign_to_array_subscript_node;
 
-typedef enum if_node_kind { IF_SINGLE_INSTR = 0, IF_MULTI_INSTR } if_node_kind;
+typedef enum cond_block_kind {
+  COND_SINGLE_INSTR = 0,
+  COND_MULTI_INSTR
+} cond_block_kind;
+
+typedef struct cond_block_node {
+  cond_block_kind kind;
+
+  union {
+    instr_node *single;
+    dynamic_array multi;
+  };
+} cond_block_node;
 
 typedef struct if_node {
-  if_node_kind kind;
   rel_node rel;
-  union {
-    instr_node *instr;
-    dynamic_array instrs;
-  };
+
+  cond_block_node then;
+  cond_block_node *else_;
 } if_node;
 
 typedef struct goto_node {
