@@ -1,11 +1,11 @@
 -include "io.scl"
 
 fn main() : int {
-  int arr[5] = {2, 6, 3, 7, 9}
-  int target = 7
+  int arr[10] = {2, 6, 3, 7, 9, 4, 8, 5, 0, 1}
+  int target = 4
 
   int i = 0
-  while i < 5 {
+  while i < 9 {
     if arr[i] == target {
       printf("target found at index %d\n", i)
       return 0
@@ -13,5 +13,6 @@ fn main() : int {
     i = i + 1
   }
 
+  printf("target not found\n")
   return 0
 }
