@@ -38,7 +38,6 @@ static void parser_init(dynamic_array *tokens, parser *p) {
  *
  * @param p: pointer to the parser state.
  * @param token: pointer to a new un-initialized token struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parser_current(parser *p, token *token) {
   dynamic_array_get(&p->tokens, p->index, token);
@@ -58,7 +57,6 @@ static void parser_advance(parser *p) { p->index++; }
  * @brief: parse a arithmetic expression. (declaration)
  *
  * @param p: pointer to the parser state.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static expr_node *parse_expr(parser *p);
 
@@ -67,7 +65,6 @@ static expr_node *parse_expr(parser *p);
  *
  * @param p: pointer to the parser state.
  * @param term: pointer to an un-initialized term_node struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_term_for_expr(parser *p, term_node *term) {
   token token = {0};
@@ -150,7 +147,6 @@ static void parse_term_for_expr(parser *p, term_node *term) {
  * @brief: parse a factor inside an arithmetic expression.
  *
  * @param p: pointer to the parser state.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static expr_node *parse_factor(parser *p) {
   token token = {0};
@@ -252,7 +248,6 @@ static expr_node *parse_factor(parser *p) {
  * @brief: parse a term.
  *
  * @param p: pointer to the parser state.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static expr_node *parse_term(parser *p) {
   expr_node *left = parse_factor(p);
@@ -290,7 +285,6 @@ static expr_node *parse_term(parser *p) {
  * @brief: parse a arithmetic expression. (definition)
  *
  * @param p: pointer to the parser state.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static expr_node *parse_expr(parser *p) {
   expr_node *left = parse_term(p);
@@ -320,7 +314,6 @@ static expr_node *parse_expr(parser *p) {
  *
  * @param p: pointer to the parser state.
  * @param rel: pointer to a rel_node struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_rel(parser *p, rel_node *rel) {
   typedef struct {
@@ -364,7 +357,7 @@ static void parse_rel(parser *p, rel_node *rel) {
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
+ * @param loop_counter: counter for unique loop IDs.
  */
 static void parse_instr(parser *p, instr_node *instr, size_t *loop_counter);
 
@@ -373,7 +366,6 @@ static void parse_instr(parser *p, instr_node *instr, size_t *loop_counter);
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_initialize(parser *p, instr_node *instr, type _type,
                              char *_name) {
@@ -390,7 +382,6 @@ static void parse_initialize(parser *p, instr_node *instr, type _type,
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_initialize_array(parser *p, instr_node *instr, type _type,
                                    char *_name, expr_node *size_expr) {
@@ -440,7 +431,6 @@ static void parse_initialize_array(parser *p, instr_node *instr, type _type,
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_declare(parser *p, instr_node *instr) {
   token token = {0};
@@ -511,7 +501,6 @@ static void parse_declare(parser *p, instr_node *instr) {
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_fn_call(parser *p, instr_node *instr) {
   token token = {0};
@@ -556,7 +545,6 @@ static void parse_fn_call(parser *p, instr_node *instr) {
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_assign(parser *p, instr_node *instr) {
   token token = {0};
@@ -672,7 +660,7 @@ static void parse_cond_block(parser *p, cond_block_node *block,
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param loop_counter: tracks loops
+ * @param loop_counter: counter for unique loop IDs.
  */
 static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
   token token = {0};
@@ -702,7 +690,6 @@ static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_goto(parser *p, instr_node *instr) {
   token token = {0};
@@ -727,7 +714,6 @@ static void parse_goto(parser *p, instr_node *instr) {
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_label(parser *p, instr_node *instr) {
   token token = {0};
@@ -748,7 +734,6 @@ static void parse_label(parser *p, instr_node *instr) {
  * @param instr: pointer to a newly malloc'd instr struct.
  * @param kind: the kind of loop to parse (UNCONDITIONAL or WHILE).
  * @param loop_counter: counter for unique loop IDs.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_loop(parser *p, instr_node *instr, loop_kind kind,
                        size_t *loop_counter) {
@@ -803,7 +788,6 @@ static void parse_loop(parser *p, instr_node *instr, loop_kind kind,
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
  * @param loop_counter: counter for unique loop IDs.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter) {
   token token = {0};
@@ -927,7 +911,6 @@ static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter) {
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void parse_ret(parser *p, instr_node *instr) {
   token token = {0};
@@ -960,7 +943,7 @@ static void parse_ret(parser *p, instr_node *instr) {
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param errors: counter variable to increment when an error is encountered.
+ * @param loop_counter: counter for unique loop IDs.
  */
 static void parse_instr(parser *p, instr_node *instr, size_t *loop_counter) {
   token token = {0};

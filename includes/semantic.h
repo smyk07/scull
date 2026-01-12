@@ -28,7 +28,6 @@ int evaluate_const_expr(expr_node *expr);
  * @param instrs: pointer to the dynamic_array of instructions.
  * @param variables: pointer to hash table of variable.
  * @param functions: pointer to the functions hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 void check_semantics(dynamic_array *instrs, ht *variables, ht *functions);
 

@@ -81,7 +81,6 @@ static const char *type_to_str(type type) {
  * @param functions: pointer to the functions hash table.
  * @param variables: pointer to the variables hash table (for argument
  * expressions).
- * @param errors: counter variable to increment when an error is encountered.
  * @param line: line number of the function call.
  */
 static void check_function_call(fn_call_node *fn_call, ht *functions,
@@ -92,7 +91,6 @@ static void check_function_call(fn_call_node *fn_call, ht *functions,
  *
  * @param instr: pointer to an instr_node.
  * @param variables: pointer to the variables hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void instr_typecheck(instr_node *instr, ht *variables, ht *functions);
 
@@ -125,7 +123,6 @@ static void declare_variables(variable *var_to_declare, ht *variables) {
  *
  * @param var_to_declare: the variable struct to append.
  * @param variables: pointer to the variables hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void declare_array(variable *arr_to_declare, expr_node *size_expr,
                           ht *variables) {
@@ -150,7 +147,6 @@ static void declare_array(variable *arr_to_declare, expr_node *size_expr,
  * @param term: pointer to a term_node.
  * @param variables: pointer to the variables hash table.
  * @param functions: pointer to the functions hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void term_check_variables(term_node *term, ht *variables,
                                  ht *functions) {
@@ -179,7 +175,6 @@ static void term_check_variables(term_node *term, ht *variables,
  * @param expr: pointer to an expr_node.
  * @param variables: pointer to the variables hash table.
  * @param functions: pointer to the functions hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void expr_check_variables(expr_node *expr, ht *variables,
                                  ht *functions) {
@@ -204,7 +199,6 @@ static void expr_check_variables(expr_node *expr, ht *variables,
  * @param rel: pointer to a rel_node.
  * @param variables: pointer to the variables hash table.
  * @param functions: pointer to the functions hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void rel_check_variables(rel_node *rel, ht *variables, ht *functions) {
   term_check_variables(&rel->comparison.lhs, variables, functions);
@@ -238,7 +232,6 @@ static void cond_block_check_variables(cond_block_node *blk, ht *variables,
  * @param instr: pointer to an instr_node.
  * @param variables: pointer to the variables hash table.
  * @param functions: pointer to the functions hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void instr_check_variables(instr_node *instr, ht *variables,
                                   ht *functions) {
@@ -315,7 +308,6 @@ static void instr_check_variables(instr_node *instr, ht *variables,
  *
  * @param labels: pointer to the labels dynamic_array.
  * @param instr: pointer to an instr_node.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void check_label(dynamic_array *labels, instr_node *instr) {
   const char *label_name = instr->label.label;
@@ -336,7 +328,6 @@ static void check_label(dynamic_array *labels, instr_node *instr) {
  *
  * @param labels: pointer to the labels dynamic_array.
  * @param instr: pointer to an instr_node.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void check_goto(dynamic_array *labels, instr_node *instr) {
   int found = 0;
@@ -434,7 +425,6 @@ static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels) {
  * @param target_type: type enumeration for the type which is required in the
  * instruction.
  * @param variables: pointer to the variables hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static type expr_type(expr_node *expr, type target_type, ht *variables,
                       ht *functions);
@@ -446,7 +436,6 @@ static type expr_type(expr_node *expr, type target_type, ht *variables,
  * @param target_type: type enumeration for the type which is required in the
  * instruction.
  * @param variables: pointer to the variables hash table.
- * @param errors: counter variable to increment when an error is encountered.
  * @param line: where the term is situated in the source buffer.
  */
 static type term_type(term_node *term, ht *variables, ht *functions) {
@@ -549,7 +538,6 @@ static type term_type(term_node *term, ht *variables, ht *functions) {
  * @param target_type: type enumeration for the type which is required in the
  * instruction.
  * @param variables: pointer to the variables hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static type expr_type(expr_node *expr, type target_type, ht *variables,
                       ht *functions) {
@@ -583,7 +571,6 @@ static type expr_type(expr_node *expr, type target_type, ht *variables,
  *
  * @param rel: pointer to a rel_node.
  * @param variables: pointer to the variables hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void rel_typecheck(rel_node *rel, ht *variables, ht *functions) {
   type lhs, rhs;
@@ -604,7 +591,6 @@ static void rel_typecheck(rel_node *rel, ht *variables, ht *functions) {
  *
  * @param instr: pointer to an instr_node.
  * @param variables: pointer to the variables hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void instr_typecheck(instr_node *instr, ht *variables, ht *functions) {
   switch (instr->kind) {
@@ -697,7 +683,6 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions) {
  *
  * @param fn: pointer to the function node to register.
  * @param functions: pointer to the functions hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void register_function(fn_node *fn, ht *functions) {
   if (!fn || !fn->name || !functions)
@@ -743,7 +728,6 @@ static void register_function(fn_node *fn, ht *functions) {
  * @param functions: pointer to the functions hash table.
  * @param variables: pointer to the variables hash table (for argument
  * expressions).
- * @param errors: counter variable to increment when an error is encountered.
  * @param line: line number of the function call.
  */
 static void check_function_call(fn_call_node *fn_call, ht *functions,
@@ -798,7 +782,6 @@ static void check_function_call(fn_call_node *fn_call, ht *functions,
  * @param ret: pointer to the return node.
  * @param fn: pointer to the containing function node.
  * @param variables: pointer to the variables hash table.
- * @param errors: counter variable to increment when an error is encountered.
  * @param line: line number of the return statement.
  */
 static void check_return_statement(return_node *ret, fn_node *fn, ht *variables,
@@ -856,7 +839,6 @@ static void register_function_parameters(fn_node *fn) {
  *
  * @param fn: pointer to the containing function node.
  * @param functions: pointer to the functions hash table.
- * @param errors: counter variable to increment when an error is encountered.
  */
 static void check_function_body(fn_node *fn, ht *functions) {
   if (fn->kind != FN_DEFINED)
