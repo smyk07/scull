@@ -14,8 +14,11 @@ SRC_DIR = ./src
 OBJ_DIR = ./obj
 BIN_DIR = ./bin
 
+# --- Development Build --- #
+
 CC = clang
 CXX = clang++
+
 CFLAGS = -std=c23 -g -Wall -Wextra -I$(INC_DIR)
 CXXFLAGS = -std=c++17 -g -Wall -Wextra -I$(INC_DIR)
 
@@ -35,15 +38,8 @@ DEPS = $(C_DEPS) $(CXX_DEPS)
 
 TARGET = $(BIN_DIR)/sclc
 
-.DEFAULT_GOAL := sclc
-
-
 sclc: $(TARGET)
-	@echo -e "$(GREEN)[INFO]$(NC) Build Successful"
-
-install: sclc
-	@echo -e "$(GREEN)[INSTALL]$(NC) $(TARGET) -> /usr/local/bin"
-	@sudo cp $(BIN_DIR)/sclc /usr/local/bin
+	@echo -e "$(GREEN)[INFO]$(NC) Development Build Successful"
 
 $(TARGET): $(OBJS) | $(BIN_DIR)
 	@$(CXX) $(OBJS) -o $@ $(LLVM_LDFLAGS) -lm
@@ -65,9 +61,58 @@ $(OBJ_DIR):
 $(BIN_DIR):
 	@mkdir -p $(BIN_DIR)
 
+# --- Release Build --- #
+
+REL_OBJ_DIR = ./obj-release
+REL_BIN_DIR = ./bin-release
+
+CFLAGS_RELEASE = -std=c23 -O3 -DNDEBUG -Wall -Wextra -I$(INC_DIR)
+CXXFLAGS_RELEASE = -std=c++17 -O3 -DNDEBUG -Wall -Wextra -I$(INC_DIR)
+
+REL_C_OBJS   = $(C_SRCS:$(SRC_DIR)/%.c=$(REL_OBJ_DIR)/%.o)
+REL_CXX_OBJS = $(CXX_SRCS:$(SRC_DIR)/%.cpp=$(REL_OBJ_DIR)/%.o)
+REL_OBJS     = $(REL_C_OBJS) $(REL_CXX_OBJS)
+
+REL_C_DEPS   = $(C_SRCS:$(SRC_DIR)/%.c=$(REL_OBJ_DIR)/%.d)
+REL_CXX_DEPS = $(CXX_SRCS:$(SRC_DIR)/%.cpp=$(REL_OBJ_DIR)/%.d)
+REL_DEPS     = $(REL_C_DEPS) $(REL_CXX_DEPS)
+
+REL_TARGET = $(REL_BIN_DIR)/sclc
+
+sclc-release: $(REL_TARGET)
+	@echo -e "$(GREEN)[INFO]$(NC) Release Build Successful"
+
+install: sclc-release
+	@echo -e "$(GREEN)[INSTALL]$(NC) $(REL_TARGET) -> /usr/local/bin/sclc"
+	@sudo cp $(REL_TARGET) /usr/local/bin/sclc
+
+$(REL_TARGET): $(REL_OBJS) | $(REL_BIN_DIR)
+	@$(CXX) $(REL_OBJS) -o $@ $(LLVM_LDFLAGS) -lm
+	@echo -e "$(GREEN)[LD]$(NC) $@"
+
+$(REL_OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(REL_OBJ_DIR)
+	@mkdir -p $(dir $@)
+	@$(CC) $(CFLAGS_RELEASE) -MMD -MF $(REL_OBJ_DIR)/$*.d -c $< -o $@
+	@echo -e "$(GREEN)[CC] [REL]$(NC) $@"
+
+$(REL_OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(REL_OBJ_DIR)
+	@mkdir -p $(dir $@)
+	@$(CXX) $(CXXFLAGS_RELEASE) $(LLVM_CXXFLAGS) -MMD -MF $(REL_OBJ_DIR)/$*.d -c $< -o $@
+	@echo -e "$(GREEN)[CXX] [REL]$(NC) $@"
+
+$(REL_OBJ_DIR):
+	@mkdir -p $(REL_OBJ_DIR)
+
+$(REL_BIN_DIR):
+	@mkdir -p $(REL_BIN_DIR)
+
 clean-sclc:
-	@rm -frf $(OBJ_DIR) $(BIN_DIR)
-	@echo -e "$(GREEN)[CLEAN]$(NC) Removed $(OBJ_DIR) $(BIN_DIR)"
+	@rm -frf $(OBJ_DIR) $(BIN_DIR) $(REL_OBJ_DIR) $(REL_BIN_DIR)
+	@echo -e "$(GREEN)[CLEAN]$(NC) Removed all build directories"
+
+#########################
+# compile_commands.json #
+#########################
 
 compile_commands.json:
 	@bear -- $(MAKE) clean-sclc sclc
@@ -77,12 +122,11 @@ clean-compile_commands.json:
 	@rm compile_commands.json
 	@echo -e "$(GREEN)[CLEAN]$(NC) Removed compile_commands.json"
 
-
 ######################
 # Examples for SCULL #
 ######################
 
-SCLC = ./bin/sclc
+SCLC = $(TARGET)
 SCLC_FLAGS = -i ./lib
 EXAMPLES_DIR = ./examples
 EXAMPLE_SRCS = $(shell find $(EXAMPLES_DIR) -name "*.scl" -type f)
@@ -101,6 +145,8 @@ clean-examples:
 
 clean-all: clean-sclc clean-examples clean-compile_commands.json
 
--include $(DEPS)
+-include $(DEPS) $(REL_DEPS)
 
-.PHONY: all sclc clean-sclc clean-all compile_commands.json clean-compile_commands.json install examples clean-examples
+.DEFAULT_GOAL := sclc
+
+.PHONY: all sclc sclc-release clean-sclc clean-all compile_commands.json clean-compile_commands.json install examples clean-examples
