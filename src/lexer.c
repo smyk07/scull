@@ -111,6 +111,10 @@ static void skip_whitespaces(lexer *l) {
  * @param l: pointer to lexer struct object.
  */
 static token lexer_next_token(lexer *l) {
+
+// label to restart lexing process again incase a comment is encountered
+restart:
+
   skip_whitespaces(l);
 
   if (l->ch == EOF) {
@@ -182,15 +186,14 @@ static token lexer_next_token(lexer *l) {
       while (l->ch != '\n') {
         lexer_read_char(l);
       }
-      return (token){.kind = TOKEN_COMMENT, .value.str = NULL, .line = l->line};
+      goto restart;
     } else if (l->ch == '*') {
       while (l->ch != '\0') {
         if (l->ch == '*') {
           lexer_read_char(l);
           if (l->ch == '-') {
             lexer_read_char(l);
-            return (token){
-                .kind = TOKEN_COMMENT, .value.str = NULL, .line = l->line};
+            goto restart;
           }
           continue;
         } else {

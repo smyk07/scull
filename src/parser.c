@@ -54,6 +54,17 @@ static void parser_current(parser *p, token *token) {
 static void parser_advance(parser *p) { p->index++; }
 
 /*
+ * @brief: parse an instruction. (declaration)
+ *
+ * @param p: pointer to the parser state.
+ * @param instr: pointer to a newly malloc'd instr struct.
+ * @param loop_counter: counter for unique loop IDs.
+ *
+ * @return: (bool) weather an instruction was parsed
+ */
+static bool parse_instr(parser *p, instr_node *instr, size_t *loop_counter);
+
+/*
  * @brief: parse a arithmetic expression. (declaration)
  *
  * @param p: pointer to the parser state.
@@ -353,17 +364,6 @@ static void parse_rel(parser *p, rel_node *rel) {
 }
 
 /*
- * @brief: parse an instruction. (declaration)
- *
- * @param p: pointer to the parser state.
- * @param instr: pointer to a newly malloc'd instr struct.
- * @param loop_counter: counter for unique loop IDs.
- *
- * @return: (bool) weather an instruction was parsed
- */
-static bool parse_instr(parser *p, instr_node *instr, size_t *loop_counter);
-
-/*
  * @brief: parse a variable initialize instruction.
  *
  * @param p: pointer to the parser state.
@@ -643,12 +643,6 @@ static void parse_cond_block(parser *p, cond_block_node *block,
       parser_current(p, &token);
     }
 
-    if (token.kind != TOKEN_RBRACE) {
-      scu_perror("Expected '}', found %s [line %d]\n",
-                 lexer_token_kind_to_str(token.kind), token.line);
-      return;
-    }
-
     parser_advance(p);
     return;
   }
@@ -890,13 +884,12 @@ static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter) {
                        sizeof(instr_node));
 
     parser_advance(p);
-    while (1) {
-      parser_current(p, &token);
-      if (token.kind == TOKEN_RBRACE)
-        break;
+    parser_current(p, &token);
+    while (token.kind != TOKEN_RBRACE && token.kind != TOKEN_END) {
       instr_node *_instr = arena_push_struct(ast_arena, instr_node);
       if (parse_instr(p, _instr, loop_counter))
         dynamic_array_append(&instr->fn_define_node.defined.instrs, _instr);
+      parser_current(p, &token);
     }
     parser_advance(p);
   }
@@ -991,9 +984,6 @@ static bool parse_instr(parser *p, instr_node *instr, size_t *loop_counter) {
   case TOKEN_RETURN:
     parse_ret(p, instr);
     return true;
-  case TOKEN_COMMENT:
-    parser_advance(p);
-    return false;
   default:
     scu_perror("unexpected token: %s - '%s' [line %d]\n",
                lexer_token_kind_to_str(token.kind), token.value, token.line);

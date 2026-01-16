@@ -91,8 +91,6 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "greater_than_or_equal";
   case TOKEN_INVALID:
     return "invalid";
-  case TOKEN_COMMENT:
-    return "comment";
   case TOKEN_END:
     return "end";
   }

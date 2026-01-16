@@ -87,7 +87,6 @@ typedef enum token_kind {
    * Special Tokens
    */
   TOKEN_INVALID,
-  TOKEN_COMMENT,
   TOKEN_END
 } token_kind;
 
