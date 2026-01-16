@@ -1,0 +1,80 @@
+-include "io.scl"
+
+fn rule110(int left, int center, int right) : int {
+  int pattern = (left * 4) + (center * 2) + right
+
+  if pattern == 7 {
+    return 0    -- 111
+  }
+  if pattern == 6 {
+    return 1    -- 110
+  }
+  if pattern == 5 {
+    return 1    -- 101
+  }
+  if pattern == 4 {
+    return 0    -- 100
+  }
+  if pattern == 3 {
+    return 1    -- 011
+  }
+  if pattern == 2 {
+    return 1    -- 010
+  }
+  if pattern == 1 {
+    return 1    -- 001
+  }
+  return 0      -- 000
+}
+
+fn main() : int {
+  int size = 91
+  int steps = 45
+
+  int current[91]
+  int next[91]
+
+  int i = 0
+  while i < size {
+    current[i] = 0
+    next[i] = 0
+    i = i + 1
+  }
+
+  current[size / 2] = 1
+
+  int t = 0
+  while t < steps {
+    int l = 0
+    while l < size {
+      if current[l] == 1 {
+        printf("#")
+      } else {
+        printf(".")
+      }
+      l = l + 1
+    }
+    printf("\n")
+
+    int j = 1
+    int temp = size - 1
+    while j < temp {
+      next[j] = rule110(current[j - 1], current[j], current[j + 1])
+      j = j + 1
+    }
+
+    next[0] = 0
+    next[size - 1] = 0
+
+    int k = 0
+    while k < size {
+      current[k] = next[k]
+      next[k] = 0
+      k = k + 1
+    }
+
+    t = t + 1
+  }
+
+  return 0
+}

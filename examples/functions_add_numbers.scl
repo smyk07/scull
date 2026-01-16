@@ -1,6 +1,6 @@
 -include "io.scl"
 
-fn add_nums (int a, int b) : int {
+fn add_nums(int a, int b) : int {
   return a + b
 }
 
