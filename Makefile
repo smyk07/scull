@@ -19,8 +19,8 @@ BIN_DIR = ./bin
 CC = clang
 CXX = clang++
 
-CFLAGS = -std=c23 -g -Wall -Wextra -I$(INC_DIR)
-CXXFLAGS = -std=c++17 -g -Wall -Wextra -I$(INC_DIR)
+CFLAGS = -std=c23 -g -O0 -Wall -Wextra -I$(INC_DIR)
+CXXFLAGS = -std=c++17 -g -O0 -Wall -Wextra -I$(INC_DIR)
 
 LLVM_CXXFLAGS = $(shell llvm-config --cxxflags)
 LLVM_LDFLAGS = $(shell llvm-config --ldflags --libs all --system-libs) -llldELF -llldCommon
@@ -105,6 +105,8 @@ $(REL_OBJ_DIR):
 
 $(REL_BIN_DIR):
 	@mkdir -p $(REL_BIN_DIR)
+
+# --- Cleanup --- #
 
 clean-sclc:
 	@rm -frf $(OBJ_DIR) $(BIN_DIR) $(REL_OBJ_DIR) $(REL_BIN_DIR)
