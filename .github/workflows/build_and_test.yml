@@ -1,0 +1,32 @@
+name: Build
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: archlinux:latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install clang, llvm and lld
+      run: |
+        pacman -Syu --noconfirm
+        pacman -S --noconfirm llvm clang lld base-devel
+    
+    - name: Verify installation
+      run: |
+        clang --version
+        clang++ --version
+        llvm-config --version
+    
+    - name: Build sclc
+      run: make
+
+    - name: Build Examples
+      run: make examples
