@@ -45,27 +45,31 @@
 
 - [x] NEC Strings
 
+- [ ] NEC proper control flow (if, else, else-if, switch, ternary)
+
 - [ ] NEC Negative numbers and u32 and i32 - like types
-
-- [ ] NEC For loop
-
-- [ ] NEC proper control flow (else, switch)
-
-- [ ] NEC Structs, Unions, Enums
-
-- [ ] NEC Some alternative for sizeof()
 
 - [ ] NEC Operators: Logical, Bitwise, Assignment, Ternary
 
+- [ ] NEC For loop
+
 - [ ] NEC Macros
 
-- [ ] NEC io.scl refresh using functions
+- [ ] NEC Structs, Unions, Enums
+
+- [ ] NEC Dynamic Memory management
 
 - [ ] NEC Either Static variables and functions, or implementation blocks (pref)
 
 - [ ] NEC Multi-dimensional arrays
 
+- [ ] NEC Some alternative for sizeof()
+
+- [ ] NEC io.scl refresh using functions
+
 - [ ] NEC Start work on the standard library
+
+- [ ] EXP For-each loop
 
 - [ ] EXP Modular / Constraints in type system (runtime overhead)
 
