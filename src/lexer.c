@@ -203,6 +203,20 @@ restart:
         return (token){
             .kind = TOKEN_INVALID, .value.character = l->ch, .line = l->line};
       }
+    } else if (isdigit(l->ch)) {
+      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
+      while (isdigit(l->ch)) {
+        slice.len += 1;
+        lexer_read_char(l);
+      }
+      char *temp = NULL;
+      string_slice_to_owned(&slice, &temp);
+
+      int value = -atoi(temp); // Negate the value
+      free(temp);
+
+      return (token){
+          .kind = TOKEN_INT, .value.integer = value, .line = l->line};
     } else if (isalnum(l->ch)) {
       string_slice slice = {.str = l->buffer + l->pos, .len = 0};
       while (isalnum(l->ch) || l->ch == '_') {
