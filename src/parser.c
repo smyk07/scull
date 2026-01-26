@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "var.h"
 
+#include <iso646.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -673,11 +674,25 @@ static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
   parse_cond_block(p, &instr->if_.then, loop_counter);
 
   parser_current(p, &token);
-  if (token.kind == TOKEN_ELSE) {
-    parser_advance(p);
 
-    instr->if_.else_ = arena_push_struct(ast_arena, cond_block_node);
-    parse_cond_block(p, instr->if_.else_, loop_counter);
+  dynamic_array_init(&instr->if_.else_ifs, sizeof(if_node));
+
+  while (token.kind == TOKEN_ELSE) {
+    parser_advance(p);
+    parser_current(p, &token);
+
+    if (token.kind == TOKEN_IF) {
+      if_node else_if = {0};
+      parser_advance(p);
+      parse_rel(p, &else_if.rel);
+      parse_cond_block(p, &else_if.then, loop_counter);
+      dynamic_array_append(&instr->if_.else_ifs, &else_if);
+      parser_current(p, &token);
+    } else {
+      instr->if_.else_ = arena_push_struct(ast_arena, cond_block_node);
+      parse_cond_block(p, instr->if_.else_, loop_counter);
+      break;
+    }
   }
 }
 
@@ -986,10 +1001,12 @@ static bool parse_instr(parser *p, instr_node *instr, size_t *loop_counter) {
     return true;
   default:
     scu_perror("unexpected token: %s - '%s' [line %d]\n",
-               lexer_token_kind_to_str(token.kind), token.value, token.line);
-    scu_check_errors();
-    return false;
+               lexer_token_kind_to_str(token.kind), token.value.str,
+               token.line);
   }
+
+  scu_check_errors();
+  return false;
 }
 
 void parser_parse_program(dynamic_array *tokens, ast *program) {

@@ -494,6 +494,9 @@ static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
     return;
   }
 
+  llvm::BasicBlock *merge_bb =
+      llvm::BasicBlock::Create(*ctx.context, "if.end", fn);
+
   llvm::Value *cond_val = llvm_irgen_relational(ctx, &if_stmt->rel);
   if (!cond_val) {
     scu_perror(const_cast<char *>("Failed to generate if condition\n"));
@@ -503,19 +506,18 @@ static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
   llvm::BasicBlock *then_bb =
       llvm::BasicBlock::Create(*ctx.context, "if.then", fn);
 
-  llvm::BasicBlock *else_bb = nullptr;
-  llvm::BasicBlock *merge_bb =
-      llvm::BasicBlock::Create(*ctx.context, "if.end", fn);
+  llvm::BasicBlock *else_target;
+  if (if_stmt->else_ifs.count > 0) {
+    else_target = llvm::BasicBlock::Create(*ctx.context, "elif.cond.0", fn);
+  } else if (if_stmt->else_) {
+    else_target = llvm::BasicBlock::Create(*ctx.context, "if.else", fn);
+  } else {
+    else_target = merge_bb;
+  }
 
-  if (if_stmt->else_)
-    else_bb = llvm::BasicBlock::Create(*ctx.context, "if.else", fn);
-  else
-    else_bb = merge_bb;
-
-  ctx.builder->CreateCondBr(cond_val, then_bb, else_bb);
+  ctx.builder->CreateCondBr(cond_val, then_bb, else_target);
 
   ctx.builder->SetInsertPoint(then_bb);
-
   if (if_stmt->then.kind == COND_SINGLE_INSTR) {
     llvm_irgen_instr(ctx, if_stmt->then.single);
   } else {
@@ -525,13 +527,59 @@ static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
       llvm_irgen_instr(ctx, &instr);
     }
   }
-
   if (!ctx.builder->GetInsertBlock()->getTerminator()) {
     ctx.builder->CreateBr(merge_bb);
   }
 
+  for (size_t i = 0; i < if_stmt->else_ifs.count; i++) {
+    if_node elif;
+    dynamic_array_get(&if_stmt->else_ifs, i, &elif);
+
+    llvm::BasicBlock *elif_cond_bb = else_target;
+    ctx.builder->SetInsertPoint(elif_cond_bb);
+
+    llvm::Value *elif_cond = llvm_irgen_relational(ctx, &elif.rel);
+    if (!elif_cond) {
+      scu_perror(const_cast<char *>("Failed to generate else-if condition\n"));
+      return;
+    }
+
+    char buf[32];
+    snprintf(buf, sizeof(buf), "elif.then.%zu", i);
+    llvm::BasicBlock *elif_then_bb =
+        llvm::BasicBlock::Create(*ctx.context, buf, fn);
+
+    llvm::BasicBlock *next_target;
+    if (i + 1 < if_stmt->else_ifs.count) {
+      snprintf(buf, sizeof(buf), "elif.cond.%zu", i + 1);
+      next_target = llvm::BasicBlock::Create(*ctx.context, buf, fn);
+    } else if (if_stmt->else_) {
+      next_target = llvm::BasicBlock::Create(*ctx.context, "if.else", fn);
+    } else {
+      next_target = merge_bb;
+    }
+
+    ctx.builder->CreateCondBr(elif_cond, elif_then_bb, next_target);
+
+    ctx.builder->SetInsertPoint(elif_then_bb);
+    if (elif.then.kind == COND_SINGLE_INSTR) {
+      llvm_irgen_instr(ctx, elif.then.single);
+    } else {
+      for (size_t j = 0; j < elif.then.multi.count; j++) {
+        instr_node instr;
+        dynamic_array_get(&elif.then.multi, j, &instr);
+        llvm_irgen_instr(ctx, &instr);
+      }
+    }
+    if (!ctx.builder->GetInsertBlock()->getTerminator()) {
+      ctx.builder->CreateBr(merge_bb);
+    }
+
+    else_target = next_target;
+  }
+
   if (if_stmt->else_) {
-    ctx.builder->SetInsertPoint(else_bb);
+    ctx.builder->SetInsertPoint(else_target);
 
     if (if_stmt->else_->kind == COND_SINGLE_INSTR) {
       llvm_irgen_instr(ctx, if_stmt->else_->single);

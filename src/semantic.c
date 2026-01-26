@@ -672,6 +672,15 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions) {
 
   case INSTR_IF:
     rel_typecheck(&instr->if_.rel, variables, functions);
+
+    if (instr->if_.else_ifs.count > 0) {
+      for (size_t i = 0; i < instr->if_.else_ifs.count; i++) {
+        if_node else_if_node;
+        dynamic_array_get(&instr->if_.else_ifs, i, &else_if_node);
+        rel_typecheck(&else_if_node.rel, variables, functions);
+      }
+    }
+
     break;
   default:
     break;

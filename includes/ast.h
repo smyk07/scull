@@ -199,6 +199,7 @@ typedef struct if_node {
   rel_node rel;
 
   cond_block_node then;
+  dynamic_array else_ifs;
   cond_block_node *else_;
 } if_node;
 
