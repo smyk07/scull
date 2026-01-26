@@ -2,6 +2,7 @@
 
 - NEC - Necessary
 - EXP - Experimental
+- ? - Unsure and needs research
 
 ## Compiler Related
 
@@ -25,15 +26,20 @@
   - Codegen / Backend
   - End-to-End
 
-- [ ] NEC Arenas / Allocators (for the full compiler) instead of the current allocation method
-  - [ ] Better arena implementation with chaining
+- [ ] NEC Better arena implementation with chaining
 
 - [x] NEC Seperate stack based and heap based allocations, see whats really needed and whats unnecessary in sclc
+
+- [ ] NEC Better errors
+  - [ ] fix existing bugs
+  - [ ] errors with source preview
 
 - [ ] NEC only emit the output file in current directory unless specified, else use `/tmp`
 
 - [ ] NEC Develop C Backend
   - Language related changes which would facilitate 1:1 C translation are needed (basic types, structs, unions, enums, memory management, etc)
+
+- [ ] EXP Build with [jart/cosmopolitan](https://github.com/jart/cosmopolitan) for future portability.
 
 - [ ] EXP Bootstrapping Strategy: (inspired from Zig)
   - Generated C code (one file) of the compiler source ships with release (need custom c backend for this)
@@ -45,31 +51,43 @@
 
 - [x] NEC Strings
 
-- [ ] NEC proper control flow (if, else, else-if, switch, ternary)
+- [ ] NEC control flow
+  - [x] if
+  - [x] else
+  - [x] else if
+  - [ ] switch case
+  - [ ] ternary operator
 
-- [ ] NEC Negative numbers and u32 and i32 - like types
+- [ ] NEC Negative numbers
 
-- [ ] NEC Operators: Logical, Bitwise, Assignment, Ternary
-
-- [ ] NEC For loop
-
-- [ ] NEC Macros
-
-- [ ] NEC Structs, Unions, Enums
-
-- [ ] NEC Dynamic Memory management
-
-- [ ] NEC Either Static variables and functions, or implementation blocks (pref)
+- [ ] NEC Better type system
+  - [ ] void
+  - [ ] unsigned ints (u32) and signed ints (i32) instead of existing
+  - [ ] structs
+  - [ ] unions
+  - [ ] enums
 
 - [ ] NEC Multi-dimensional arrays
 
+- [ ] NEC Operators
+  - [ ] Logical
+  - [ ] Bitwise
+  - [ ] Assignment
+
+- [ ] NEC For loop
+
+- [ ] EXP For-each loop
+
+- [ ] NEC preprocessor Macros
+
 - [ ] NEC Some alternative for sizeof()
+
+- [ ] NEC Implementation blocks for user defined data types
 
 - [ ] NEC io.scl refresh using functions
 
-- [ ] NEC Start work on the standard library
-
-- [ ] EXP For-each loop
+- [ ] NEC Standard Library
+  - [ ] Dynamic Memory management
 
 - [ ] EXP Modular / Constraints in type system (runtime overhead)
 
