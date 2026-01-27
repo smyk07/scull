@@ -66,8 +66,8 @@ $(BIN_DIR):
 REL_OBJ_DIR = ./obj-release
 REL_BIN_DIR = ./bin-release
 
-CFLAGS_RELEASE = -std=c23 -O3 -DNDEBUG -Wall -Wextra -I$(INC_DIR)
-CXXFLAGS_RELEASE = -std=c++17 -O3 -DNDEBUG -Wall -Wextra -I$(INC_DIR)
+CFLAGS_RELEASE = -std=c23 -O2 -DNDEBUG -Wall -Wextra -I$(INC_DIR)
+CXXFLAGS_RELEASE = -std=c++17 -O2 -DNDEBUG -Wall -Wextra -I$(INC_DIR)
 
 REL_C_OBJS   = $(C_SRCS:$(SRC_DIR)/%.c=$(REL_OBJ_DIR)/%.o)
 REL_CXX_OBJS = $(CXX_SRCS:$(SRC_DIR)/%.cpp=$(REL_OBJ_DIR)/%.o)
