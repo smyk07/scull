@@ -219,7 +219,6 @@ typedef enum loop_kind {
 
 typedef struct loop_node {
   loop_kind kind;
-  size_t loop_id;
   rel_node break_condition;
   dynamic_array instrs;
 } loop_node;
@@ -284,7 +283,6 @@ typedef struct instr_node {
 typedef struct ast {
   mem_arena arena;
   dynamic_array instrs;
-  size_t loop_counter;
 } ast;
 
 /*

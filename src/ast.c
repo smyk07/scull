@@ -9,7 +9,6 @@
 void ast_init(ast *a) {
   arena_init(&a->arena, 5 << 20); // allocate 5 megabytes for now
   dynamic_array_init(&a->instrs, sizeof(instr_node));
-  a->loop_counter = 0;
 }
 
 /*
@@ -297,14 +296,14 @@ void print_instr(instr_node *instr) {
   case INSTR_LOOP:
     switch (instr->loop.kind) {
     case LOOP_UNCONDITIONAL:
-      printf("loop %zu starts: \n", instr->loop.loop_id);
+      printf("loop starts: \n");
       break;
     case LOOP_WHILE:
-      printf("while loop %zu starts, break condition: ", instr->loop.loop_id);
+      printf("while loop starts, break condition: ");
       check_rel_node_and_print(&instr->loop.break_condition);
       break;
     case LOOP_DO_WHILE:
-      printf("do-loop %zu starts, break condition: ", instr->loop.loop_id);
+      printf("do-while-loop starts, break condition: ");
       check_rel_node_and_print(&instr->loop.break_condition);
       break;
     }

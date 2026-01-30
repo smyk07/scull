@@ -59,11 +59,10 @@ static void parser_advance(parser *p) { p->index++; }
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param loop_counter: counter for unique loop IDs.
  *
  * @return: (bool) weather an instruction was parsed
  */
-static bool parse_instr(parser *p, instr_node *instr, size_t *loop_counter);
+static bool parse_instr(parser *p, instr_node *instr);
 
 /*
  * @brief: parse a arithmetic expression. (declaration)
@@ -613,10 +612,8 @@ static void parse_assign(parser *p, instr_node *instr) {
  *
  * @param p: pointer to the parser state.
  * @param block: pointer to the condiitonal block.
- * @param loop_counter: tracks loops
  */
-static void parse_cond_block(parser *p, cond_block_node *block,
-                             size_t *loop_counter) {
+static void parse_cond_block(parser *p, cond_block_node *block) {
   token token = {0};
   parser_current(p, &token);
 
@@ -625,7 +622,7 @@ static void parse_cond_block(parser *p, cond_block_node *block,
     parser_advance(p);
 
     block->single = arena_push_struct(ast_arena, instr_node);
-    parse_instr(p, block->single, loop_counter);
+    parse_instr(p, block->single);
     return;
   }
 
@@ -638,7 +635,7 @@ static void parse_cond_block(parser *p, cond_block_node *block,
     parser_current(p, &token);
     while (token.kind != TOKEN_RBRACE && token.kind != TOKEN_END) {
       instr_node *new_instr = arena_push_struct(ast_arena, instr_node);
-      if (parse_instr(p, new_instr, loop_counter))
+      if (parse_instr(p, new_instr))
         dynamic_array_append(&block->multi, new_instr);
 
       parser_current(p, &token);
@@ -657,9 +654,8 @@ static void parse_cond_block(parser *p, cond_block_node *block,
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param loop_counter: counter for unique loop IDs.
  */
-static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
+static void parse_if(parser *p, instr_node *instr) {
   token token = {0};
 
   instr->kind = INSTR_IF;
@@ -671,7 +667,7 @@ static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
   parser_current(p, &token);
   instr->line = token.line;
 
-  parse_cond_block(p, &instr->if_.then, loop_counter);
+  parse_cond_block(p, &instr->if_.then);
 
   parser_current(p, &token);
 
@@ -685,12 +681,12 @@ static void parse_if(parser *p, instr_node *instr, size_t *loop_counter) {
       if_node else_if = {0};
       parser_advance(p);
       parse_rel(p, &else_if.rel);
-      parse_cond_block(p, &else_if.then, loop_counter);
+      parse_cond_block(p, &else_if.then);
       dynamic_array_append(&instr->if_.else_ifs, &else_if);
       parser_current(p, &token);
     } else {
       instr->if_.else_ = arena_push_struct(ast_arena, cond_block_node);
-      parse_cond_block(p, instr->if_.else_, loop_counter);
+      parse_cond_block(p, instr->if_.else_);
       break;
     }
   }
@@ -744,17 +740,14 @@ static void parse_label(parser *p, instr_node *instr) {
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
  * @param kind: the kind of loop to parse (UNCONDITIONAL or WHILE).
- * @param loop_counter: counter for unique loop IDs.
  */
-static void parse_loop(parser *p, instr_node *instr, loop_kind kind,
-                       size_t *loop_counter) {
+static void parse_loop(parser *p, instr_node *instr, loop_kind kind) {
   token token = {0};
 
   parser_current(p, &token);
   instr->kind = INSTR_LOOP;
   instr->line = token.line;
   instr->loop.kind = kind;
-  instr->loop.loop_id = (*loop_counter)++;
   dynamic_array_init(&instr->loop.instrs, sizeof(instr_node));
 
   parser_advance(p);
@@ -774,7 +767,7 @@ static void parse_loop(parser *p, instr_node *instr, loop_kind kind,
   parser_current(p, &token);
   while (token.kind != TOKEN_RBRACE) {
     instr_node *_instr = arena_push_struct(ast_arena, instr_node);
-    if (parse_instr(p, _instr, loop_counter))
+    if (parse_instr(p, _instr))
       dynamic_array_append(&instr->loop.instrs, _instr);
     parser_current(p, &token);
   }
@@ -792,9 +785,8 @@ static void parse_loop(parser *p, instr_node *instr, loop_kind kind,
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param loop_counter: counter for unique loop IDs.
  */
-static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter) {
+static void parse_fn(parser *p, instr_node *instr) {
   token token = {0};
   parser_current(p, &token);
   instr->kind = INSTR_FN_DECLARE;
@@ -902,7 +894,7 @@ static void parse_fn(parser *p, instr_node *instr, size_t *loop_counter) {
     parser_current(p, &token);
     while (token.kind != TOKEN_RBRACE && token.kind != TOKEN_END) {
       instr_node *_instr = arena_push_struct(ast_arena, instr_node);
-      if (parse_instr(p, _instr, loop_counter))
+      if (parse_instr(p, _instr))
         dynamic_array_append(&instr->fn_define_node.defined.instrs, _instr);
       parser_current(p, &token);
     }
@@ -947,11 +939,10 @@ static void parse_ret(parser *p, instr_node *instr) {
  *
  * @param p: pointer to the parser state.
  * @param instr: pointer to a newly malloc'd instr struct.
- * @param loop_counter: counter for unique loop IDs.
  *
  * @return: (bool) weather an instruction was parsed
  */
-static bool parse_instr(parser *p, instr_node *instr, size_t *loop_counter) {
+static bool parse_instr(parser *p, instr_node *instr) {
   token token = {0};
 
   parser_current(p, &token);
@@ -966,7 +957,7 @@ static bool parse_instr(parser *p, instr_node *instr, size_t *loop_counter) {
     parse_assign(p, instr);
     return true;
   case TOKEN_IF:
-    parse_if(p, instr, loop_counter);
+    parse_if(p, instr);
     return true;
   case TOKEN_GOTO:
     parse_goto(p, instr);
@@ -975,13 +966,13 @@ static bool parse_instr(parser *p, instr_node *instr, size_t *loop_counter) {
     parse_label(p, instr);
     return true;
   case TOKEN_LOOP:
-    parse_loop(p, instr, LOOP_UNCONDITIONAL, loop_counter);
+    parse_loop(p, instr, LOOP_UNCONDITIONAL);
     return true;
   case TOKEN_WHILE:
-    parse_loop(p, instr, LOOP_WHILE, loop_counter);
+    parse_loop(p, instr, LOOP_WHILE);
     return true;
   case TOKEN_DO_WHILE:
-    parse_loop(p, instr, LOOP_DO_WHILE, loop_counter);
+    parse_loop(p, instr, LOOP_DO_WHILE);
     return true;
   case TOKEN_BREAK:
     instr->kind = INSTR_LOOP_BREAK;
@@ -994,7 +985,7 @@ static bool parse_instr(parser *p, instr_node *instr, size_t *loop_counter) {
     parser_advance(p);
     return true;
   case TOKEN_FN:
-    parse_fn(p, instr, loop_counter);
+    parse_fn(p, instr);
     return true;
   case TOKEN_RETURN:
     parse_ret(p, instr);
@@ -1020,7 +1011,7 @@ void parser_parse_program(dynamic_array *tokens, ast *program) {
   while (token.kind != TOKEN_END) {
     instr_node *instr = arena_push_struct(ast_arena, instr_node);
     scu_check_errors();
-    if (parse_instr(&p, instr, &program->loop_counter))
+    if (parse_instr(&p, instr))
       dynamic_array_append(&program->instrs, instr);
 
     parser_current(&p, &token);
