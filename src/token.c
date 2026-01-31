@@ -13,8 +13,8 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "else";
   case TOKEN_THEN:
     return "then";
-  case TOKEN_LABEL:
-    return "label";
+  case TOKEN_MATCH:
+    return "match";
   case TOKEN_LOOP:
     return "loop declare";
   case TOKEN_WHILE:
@@ -29,26 +29,31 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "fn (signature begin)";
   case TOKEN_RETURN:
     return "return";
-  case TOKEN_PDIR_INCLUDE:
-    return "pdir_include";
+
   case TOKEN_TYPE_INT:
     return "type_int";
   case TOKEN_TYPE_CHAR:
     return "type_char";
-  case TOKEN_IDENTIFIER:
-    return "identifier";
+
+  case TOKEN_PDIR_INCLUDE:
+    return "pdir_include";
+
   case TOKEN_INT:
     return "int";
   case TOKEN_CHAR:
     return "char";
   case TOKEN_STRING:
     return "string";
+
+  case TOKEN_IDENTIFIER:
+    return "identifier";
+  case TOKEN_LABEL:
+    return "label";
   case TOKEN_POINTER:
     return "pointer";
-  case TOKEN_ELLIPSIS:
-    return "... (ellipsis)";
-  case TOKEN_ASSIGN:
-    return "assign";
+  case TOKEN_ADDRESS_OF:
+    return "addof";
+
   case TOKEN_LPAREN:
     return "bracket open";
   case TOKEN_RPAREN:
@@ -65,6 +70,9 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "comma";
   case TOKEN_COLON:
     return "colon";
+
+  case TOKEN_ASSIGN:
+    return "assign";
   case TOKEN_ADD:
     return "add";
   case TOKEN_SUBTRACT:
@@ -75,8 +83,7 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "divide";
   case TOKEN_MODULO:
     return "modulo";
-  case TOKEN_ADDRESS_OF:
-    return "addof";
+
   case TOKEN_IS_EQUAL:
     return "is_equal";
   case TOKEN_NOT_EQUAL:
@@ -89,6 +96,14 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "greater_than";
   case TOKEN_GREATER_THAN_OR_EQUAL:
     return "greater_than_or_equal";
+
+  case TOKEN_DARROW:
+    return "=> (darrow)";
+  case TOKEN_UNDERSCORE:
+    return "_ (underscore)";
+  case TOKEN_ELLIPSIS:
+    return "... (ellipsis)";
+
   case TOKEN_INVALID:
     return "invalid";
   case TOKEN_END:

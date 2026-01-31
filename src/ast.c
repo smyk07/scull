@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 void ast_init(ast *a) {
   arena_init(&a->arena, 5 << 20); // allocate 5 megabytes for now
@@ -52,7 +53,12 @@ static void check_term_and_print(term_node *term) {
     printf("\'%c\'", term->value.character);
     break;
   case TERM_STRING:
-    printf("\"%s\"", term->value.str);
+    char *str = term->value.str;
+    size_t len = strlen(str);
+    if (len >= 1 && str[len - 1] == '\n')
+      printf("\"%.*s\"", (int)(len - 1), str);
+    else
+      printf("\"%s\"", str);
     break;
   case TERM_IDENTIFIER:
     printf("%s", term->identifier.name);
@@ -282,6 +288,52 @@ void print_instr(instr_node *instr) {
     print_cond_block(&ifn->then, "then");
     if (ifn->else_)
       print_cond_block(ifn->else_, "else");
+    break;
+  }
+
+  case INSTR_MATCH: {
+    match_node *match = &instr->match;
+
+    printf("match ");
+    check_expr_and_print(match->expr);
+    printf(" {\n");
+
+    for (size_t i = 0; i < match->cases.count; i++) {
+      match_case_node case_node;
+      dynamic_array_get(&match->cases, i, &case_node);
+
+      printf("\tcase ");
+
+      switch (case_node.kind) {
+      case MATCH_CASE_VALUES: {
+        for (size_t j = 0; j < case_node.values.values.count; j++) {
+          expr_node *val;
+          dynamic_array_get(&case_node.values.values, j, &val);
+          check_expr_and_print(val);
+          if (j < case_node.values.values.count - 1)
+            printf(", ");
+        }
+        break;
+      }
+
+      case MATCH_CASE_RANGE: {
+        check_expr_and_print(case_node.range.start);
+        printf("...");
+        check_expr_and_print(case_node.range.end);
+        break;
+      }
+
+      case MATCH_CASE_DEFAULT: {
+        printf("_");
+        break;
+      }
+      }
+
+      print_cond_block(&case_node.body, "");
+    }
+
+    printf("}\n");
+
     break;
   }
 
@@ -567,6 +619,38 @@ static void free_instr(instr_node *instr) {
     free_rel_node(&instr->if_.rel);
     free_cond_block_node(&instr->if_.then);
     free_cond_block_node(instr->if_.else_);
+    break;
+
+  case INSTR_MATCH:
+    free_expr_node(instr->match.expr);
+
+    for (size_t i = 0; i < instr->match.cases.count; i++) {
+      match_case_node case_node;
+      dynamic_array_get(&instr->match.cases, i, &case_node);
+
+      switch (case_node.kind) {
+      case MATCH_CASE_VALUES:
+        for (size_t j = 0; j < case_node.values.values.count; j++) {
+          expr_node *expr;
+          dynamic_array_get(&case_node.values.values, j, &expr);
+          free_expr_node(expr);
+        }
+        dynamic_array_free(&case_node.values.values);
+        break;
+
+      case MATCH_CASE_RANGE:
+        free_expr_node(case_node.range.start);
+        free_expr_node(case_node.range.end);
+        break;
+
+      case MATCH_CASE_DEFAULT:
+        break;
+      }
+
+      free_cond_block_node(&case_node.body);
+    }
+
+    dynamic_array_free(&instr->match.cases);
     break;
 
   case INSTR_LOOP:

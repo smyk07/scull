@@ -20,8 +20,7 @@ typedef enum token_kind {
   TOKEN_IF,
   TOKEN_ELSE,
   TOKEN_THEN,
-  TOKEN_TYPE_INT,
-  TOKEN_TYPE_CHAR,
+  TOKEN_MATCH,
   TOKEN_LOOP,
   TOKEN_WHILE,
   TOKEN_DO_WHILE,
@@ -31,6 +30,12 @@ typedef enum token_kind {
   TOKEN_RETURN,
 
   /*
+   * Types
+   */
+  TOKEN_TYPE_INT,
+  TOKEN_TYPE_CHAR,
+
+  /*
    * Preprocessor Directives
    */
   TOKEN_PDIR_INCLUDE,
@@ -38,50 +43,56 @@ typedef enum token_kind {
   /*
    * Literals
    */
-  TOKEN_IDENTIFIER,
-  TOKEN_LABEL,
   TOKEN_INT,
   TOKEN_CHAR,
   TOKEN_STRING,
-  TOKEN_POINTER,
-  TOKEN_ELLIPSIS, //'...'
 
   /*
-   * Brackets
+   * Identifiers
    */
-  TOKEN_LPAREN,
-  TOKEN_RPAREN,
-  TOKEN_LBRACE,
-  TOKEN_RBRACE,
-  TOKEN_LSQBR,
-  TOKEN_RSQBR,
+  TOKEN_IDENTIFIER,
+  TOKEN_LABEL,
+  TOKEN_POINTER,    // *identifier
+  TOKEN_ADDRESS_OF, // &identifier
 
   /*
    * Delimiters
    */
-  TOKEN_COMMA,
-  TOKEN_COLON,
+  TOKEN_LPAREN, // (
+  TOKEN_RPAREN, // )
+  TOKEN_LBRACE, // {
+  TOKEN_RBRACE, // }
+  TOKEN_LSQBR,  // [
+  TOKEN_RSQBR,  // ]
+  TOKEN_COMMA,  // ,
+  TOKEN_COLON,  // :
 
   /*
-   * Arithmetic Operators
+   * Operators - Arithmetic
    */
-  TOKEN_ASSIGN,
-  TOKEN_ADD,
-  TOKEN_SUBTRACT,
-  TOKEN_MULTIPLY,
-  TOKEN_DIVIDE,
-  TOKEN_MODULO,
-  TOKEN_ADDRESS_OF,
+  TOKEN_ASSIGN,   // =
+  TOKEN_ADD,      // +
+  TOKEN_SUBTRACT, // -
+  TOKEN_MULTIPLY, // *
+  TOKEN_DIVIDE,   // /
+  TOKEN_MODULO,   // %
 
   /*
-   * Conditional Operators
+   * Operators - Relational
    */
-  TOKEN_IS_EQUAL,
-  TOKEN_NOT_EQUAL,
-  TOKEN_LESS_THAN,
-  TOKEN_LESS_THAN_OR_EQUAL,
-  TOKEN_GREATER_THAN,
-  TOKEN_GREATER_THAN_OR_EQUAL,
+  TOKEN_IS_EQUAL,              // ==
+  TOKEN_NOT_EQUAL,             // !=
+  TOKEN_LESS_THAN,             // <
+  TOKEN_LESS_THAN_OR_EQUAL,    // <=
+  TOKEN_GREATER_THAN,          // >
+  TOKEN_GREATER_THAN_OR_EQUAL, // >=
+
+  /*
+   * Special Symbols
+   */
+  TOKEN_DARROW,     // =>
+  TOKEN_UNDERSCORE, // _
+  TOKEN_ELLIPSIS,   // ...
 
   /*
    * Special Tokens

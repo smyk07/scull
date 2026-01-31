@@ -286,6 +286,33 @@ static void instr_check_variables(instr_node *instr, ht *variables,
       cond_block_check_variables(instr->if_.else_, variables, functions);
     break;
 
+  case INSTR_MATCH:
+    expr_check_variables(instr->match.expr, variables, functions);
+
+    for (size_t i = 0; i < instr->match.cases.count; i++) {
+      match_case_node case_node;
+      dynamic_array_get(&instr->match.cases, i, &case_node);
+
+      switch (case_node.kind) {
+      case MATCH_CASE_VALUES:
+        for (size_t j = 0; j < case_node.values.values.count; j++) {
+          expr_node *expr;
+          dynamic_array_get(&case_node.values.values, j, &expr);
+          expr_check_variables(expr, variables, functions);
+        }
+        break;
+      case MATCH_CASE_RANGE:
+        expr_check_variables(case_node.range.start, variables, functions);
+        expr_check_variables(case_node.range.end, variables, functions);
+        break;
+      case MATCH_CASE_DEFAULT:
+        break;
+      }
+
+      cond_block_check_variables(&case_node.body, variables, functions);
+    }
+    break;
+
   case INSTR_LOOP:
     if (instr->loop.kind == LOOP_WHILE) {
       rel_check_variables(&instr->loop.break_condition, variables, functions);
@@ -670,9 +697,8 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions) {
     break;
   }
 
-  case INSTR_IF:
+  case INSTR_IF: {
     rel_typecheck(&instr->if_.rel, variables, functions);
-
     if (instr->if_.else_ifs.count > 0) {
       for (size_t i = 0; i < instr->if_.else_ifs.count; i++) {
         if_node else_if_node;
@@ -680,8 +706,66 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions) {
         rel_typecheck(&else_if_node.rel, variables, functions);
       }
     }
-
     break;
+  }
+
+  case INSTR_MATCH: {
+    type match_expr_type =
+        expr_type(instr->match.expr, TYPE_INT, variables, functions);
+
+    for (size_t i = 0; i < instr->match.cases.count; i++) {
+      match_case_node case_node;
+      dynamic_array_get(&instr->match.cases, i, &case_node);
+
+      switch (case_node.kind) {
+      case MATCH_CASE_VALUES: {
+        for (size_t j = 0; j < case_node.values.values.count; j++) {
+          expr_node *expr;
+          dynamic_array_get(&case_node.values.values, j, &expr);
+          type value_type =
+              expr_type(expr, match_expr_type, variables, functions);
+
+          if (value_type != match_expr_type) {
+            const char *match_type_str = type_to_str(match_expr_type);
+            const char *value_type_str = type_to_str(value_type);
+            scu_perror("Type mismatch in match case - expected %s but got %s "
+                       "[line %u]\n",
+                       match_type_str, value_type_str, instr->line);
+          }
+        }
+        break;
+      }
+
+      case MATCH_CASE_RANGE: {
+        type start_type = expr_type(case_node.range.start, match_expr_type,
+                                    variables, functions);
+        if (start_type != match_expr_type) {
+          const char *match_type_str = type_to_str(match_expr_type);
+          const char *start_type_str = type_to_str(start_type);
+          scu_perror("Type mismatch in match range start - expected %s but got "
+                     "%s [line %u]\n",
+                     match_type_str, start_type_str, instr->line);
+        }
+
+        type end_type = expr_type(case_node.range.end, match_expr_type,
+                                  variables, functions);
+        if (end_type != match_expr_type) {
+          const char *match_type_str = type_to_str(match_expr_type);
+          const char *end_type_str = type_to_str(end_type);
+          scu_perror("Type mismatch in match range end - expected %s but got "
+                     "%s [line %u]\n",
+                     match_type_str, end_type_str, instr->line);
+        }
+        break;
+      }
+
+      case MATCH_CASE_DEFAULT:
+        break;
+      }
+    }
+    break;
+  }
+
   default:
     break;
   }

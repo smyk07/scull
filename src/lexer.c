@@ -128,6 +128,9 @@ restart:
       lexer_read_char(l);
       return (token){
           .kind = TOKEN_IS_EQUAL, .value.str = NULL, .line = l->line};
+    } else if (l->ch == '>') {
+      lexer_read_char(l);
+      return (token){.kind = TOKEN_DARROW, .value.str = NULL, .line = l->line};
     }
     return (token){.kind = TOKEN_ASSIGN, .value.str = NULL, .line = l->line};
   }
@@ -180,6 +183,12 @@ restart:
     return (token){.kind = TOKEN_COMMA, .value.str = NULL, .line = l->line};
   }
 
+  else if (l->ch == '_') {
+    lexer_read_char(l);
+    return (token){
+        .kind = TOKEN_UNDERSCORE, .value.str = NULL, .line = l->line};
+  }
+
   else if (l->ch == '-') {
     lexer_read_char(l);
     if (l->ch == '-') {
@@ -212,7 +221,7 @@ restart:
       char *temp = NULL;
       string_slice_to_owned(&slice, &temp);
 
-      int value = -atoi(temp); // Negate the value
+      int value = -atoi(temp);
       free(temp);
 
       return (token){
@@ -495,6 +504,11 @@ restart:
     else if (strcmp(value, "then") == 0) {
       free(value);
       return (token){.kind = TOKEN_THEN, .value.str = NULL, .line = l->line};
+    }
+
+    else if (strcmp(value, "match") == 0) {
+      free(value);
+      return (token){.kind = TOKEN_MATCH, .value.str = NULL, .line = l->line};
     }
 
     else if (strcmp(value, "int") == 0) {

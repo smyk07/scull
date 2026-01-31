@@ -136,6 +136,7 @@ typedef enum instr_kind {
   INSTR_ASSIGN,
   INSTR_ASSIGN_TO_ARRAY_SUBSCRIPT,
   INSTR_IF,
+  INSTR_MATCH,
   INSTR_GOTO,
   INSTR_LABEL,
   INSTR_LOOP,
@@ -203,6 +204,37 @@ typedef struct if_node {
   cond_block_node *else_;
 } if_node;
 
+typedef enum match_case_kind {
+  MATCH_CASE_VALUES = 0, // 1, 2, 3
+  MATCH_CASE_RANGE,      // 1...10
+  MATCH_CASE_DEFAULT     // _
+} match_case_kind;
+
+typedef struct match_case_values_node {
+  dynamic_array values;
+} match_case_values_node;
+
+typedef struct match_case_range_node {
+  expr_node *start;
+  expr_node *end;
+} match_case_range_node;
+
+typedef struct match_case_node {
+  match_case_kind kind;
+
+  union {
+    match_case_values_node values;
+    match_case_range_node range;
+  };
+
+  cond_block_node body;
+} match_case_node;
+
+typedef struct match_node {
+  expr_node *expr;
+  dynamic_array cases;
+} match_node;
+
 typedef struct goto_node {
   const char *label;
 } goto_node;
@@ -267,6 +299,7 @@ typedef struct instr_node {
     assign_node assign;
     assign_to_array_subscript_node assign_to_array_subscript;
     if_node if_;
+    match_node match;
     goto_node goto_;
     label_node label;
     loop_node loop;

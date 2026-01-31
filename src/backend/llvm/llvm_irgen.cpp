@@ -1,4 +1,5 @@
 #include "backend/llvm/llvm_irgen.hpp"
+#include "ast.h"
 
 extern "C" {
 #include "ds/dynamic_array.h"
@@ -599,6 +600,114 @@ static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
   ctx.builder->SetInsertPoint(merge_bb);
 }
 
+static void llvm_irgen_instr_match(llvm_backend_ctx &ctx,
+                                   match_node *match_stmt) {
+  llvm::Function *fn = ctx.builder->GetInsertBlock()->getParent();
+  if (!fn) {
+    scu_perror(const_cast<char *>("Match statement outside function\n"));
+    return;
+  }
+
+  llvm::Value *match_val = llvm_irgen_expr(ctx, match_stmt->expr);
+  if (!match_val) {
+    scu_perror(const_cast<char *>("Failed to generate match expression\n"));
+    return;
+  }
+
+  llvm::BasicBlock *merge_bb =
+      llvm::BasicBlock::Create(*ctx.context, "match.end", fn);
+
+  llvm::BasicBlock *default_bb = merge_bb;
+
+  for (size_t i = 0; i < match_stmt->cases.count; i++) {
+    match_case_node case_node;
+    dynamic_array_get(&match_stmt->cases, i, &case_node);
+    if (case_node.kind == MATCH_CASE_DEFAULT) {
+      break;
+    }
+  }
+
+  for (size_t i = 0; i < match_stmt->cases.count; i++) {
+    match_case_node case_node;
+    dynamic_array_get(&match_stmt->cases, i, &case_node);
+
+    char buf[64];
+    snprintf(buf, sizeof(buf), "match.case.%zu", i);
+    llvm::BasicBlock *case_body_bb =
+        llvm::BasicBlock::Create(*ctx.context, buf, fn);
+
+    llvm::BasicBlock *next_case_bb;
+    if (i + 1 < match_stmt->cases.count) {
+      snprintf(buf, sizeof(buf), "match.check.%zu", i + 1);
+      next_case_bb = llvm::BasicBlock::Create(*ctx.context, buf, fn);
+    } else {
+      next_case_bb = default_bb;
+    }
+
+    switch (case_node.kind) {
+    case MATCH_CASE_VALUES: {
+      llvm::Value *match_cond = nullptr;
+
+      for (size_t j = 0; j < case_node.values.values.count; j++) {
+        expr_node *expr;
+        dynamic_array_get(&case_node.values.values, j, &expr);
+        llvm::Value *case_val = llvm_irgen_expr(ctx, expr);
+
+        llvm::Value *cmp = ctx.builder->CreateICmpEQ(match_val, case_val);
+
+        if (match_cond) {
+          match_cond = ctx.builder->CreateOr(match_cond, cmp);
+        } else {
+          match_cond = cmp;
+        }
+      }
+
+      ctx.builder->CreateCondBr(match_cond, case_body_bb, next_case_bb);
+      break;
+    }
+
+    case MATCH_CASE_RANGE: {
+      llvm::Value *start_val = llvm_irgen_expr(ctx, case_node.range.start);
+      llvm::Value *end_val = llvm_irgen_expr(ctx, case_node.range.end);
+
+      llvm::Value *ge_start = ctx.builder->CreateICmpSGE(match_val, start_val);
+      llvm::Value *le_end = ctx.builder->CreateICmpSLE(match_val, end_val);
+      llvm::Value *in_range = ctx.builder->CreateAnd(ge_start, le_end);
+
+      ctx.builder->CreateCondBr(in_range, case_body_bb, next_case_bb);
+      break;
+    }
+
+    case MATCH_CASE_DEFAULT: {
+      ctx.builder->CreateBr(case_body_bb);
+      default_bb = case_body_bb;
+      break;
+    }
+    }
+
+    ctx.builder->SetInsertPoint(case_body_bb);
+    if (case_node.body.kind == COND_SINGLE_INSTR) {
+      llvm_irgen_instr(ctx, case_node.body.single);
+    } else {
+      for (size_t j = 0; j < case_node.body.multi.count; j++) {
+        instr_node instr;
+        dynamic_array_get(&case_node.body.multi, j, &instr);
+        llvm_irgen_instr(ctx, &instr);
+      }
+    }
+
+    if (!ctx.builder->GetInsertBlock()->getTerminator()) {
+      ctx.builder->CreateBr(merge_bb);
+    }
+
+    if (i + 1 < match_stmt->cases.count) {
+      ctx.builder->SetInsertPoint(next_case_bb);
+    }
+  }
+
+  ctx.builder->SetInsertPoint(merge_bb);
+}
+
 static void llvm_irgen_instr_goto(llvm_backend_ctx &ctx, goto_node *goto_stmt) {
   llvm::Function *fn = ctx.builder->GetInsertBlock()->getParent();
   if (!fn) {
@@ -911,6 +1020,10 @@ void llvm_irgen_instr(llvm_backend_ctx &ctx, instr_node *instr) {
 
   case INSTR_IF:
     llvm_irgen_instr_if(ctx, &instr->if_);
+    break;
+
+  case INSTR_MATCH:
+    llvm_irgen_instr_match(ctx, &instr->match);
     break;
 
   case INSTR_GOTO:

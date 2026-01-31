@@ -7,12 +7,6 @@
 #include "utils.h"
 #include "var.h"
 
-#include <iso646.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-
 static mem_arena *ast_arena;
 
 /*
@@ -617,15 +611,6 @@ static void parse_cond_block(parser *p, cond_block_node *block) {
   token token = {0};
   parser_current(p, &token);
 
-  if (token.kind == TOKEN_THEN) {
-    block->kind = COND_SINGLE_INSTR;
-    parser_advance(p);
-
-    block->single = arena_push_struct(ast_arena, instr_node);
-    parse_instr(p, block->single);
-    return;
-  }
-
   if (token.kind == TOKEN_LBRACE) {
     block->kind = COND_MULTI_INSTR;
     parser_advance(p);
@@ -643,9 +628,15 @@ static void parse_cond_block(parser *p, cond_block_node *block) {
 
     parser_advance(p);
     return;
+  } else {
+    block->kind = COND_SINGLE_INSTR;
+
+    block->single = arena_push_struct(ast_arena, instr_node);
+    parse_instr(p, block->single);
+    return;
   }
 
-  scu_perror("Expected 'then' or '{', found %s [line %d]\n",
+  scu_perror("Expected a statement or '{', found %s [line %d]\n",
              lexer_token_kind_to_str(token.kind), token.line);
 }
 
@@ -690,6 +681,94 @@ static void parse_if(parser *p, instr_node *instr) {
       break;
     }
   }
+}
+
+/*
+ * @brief: parse a match statement.
+ *
+ * @param p: pointer to the parser state.
+ * @param instr: pointer to a newly malloc'd instr struct.
+ */
+static void parse_match(parser *p, instr_node *instr) {
+  token token = {0};
+
+  instr->kind = INSTR_MATCH;
+  instr->match.expr = arena_push_struct(ast_arena, expr_node);
+
+  parser_advance(p);
+
+  instr->match.expr = parse_expr(p);
+
+  parser_current(p, &token);
+  instr->line = token.line;
+
+  if (token.kind != TOKEN_LBRACE) {
+    scu_perror("expected '{' after match expression [line %d]\n", token.line);
+    scu_check_errors();
+  }
+  parser_advance(p);
+
+  dynamic_array_init(&instr->match.cases, sizeof(match_case_node));
+
+  parser_current(p, &token);
+  while (token.kind != TOKEN_RBRACE && token.kind != TOKEN_END) {
+    match_case_node case_node = {0};
+
+    if (token.kind == TOKEN_UNDERSCORE) {
+      case_node.kind = MATCH_CASE_DEFAULT;
+      parser_advance(p);
+    } else {
+      expr_node *first_expr = arena_push_struct(ast_arena, expr_node);
+      first_expr = parse_expr(p);
+
+      parser_current(p, &token);
+
+      if (token.kind == TOKEN_ELLIPSIS) {
+        case_node.kind = MATCH_CASE_RANGE;
+        case_node.range.start = first_expr;
+
+        parser_advance(p);
+
+        case_node.range.end = arena_push_struct(ast_arena, expr_node);
+        case_node.range.end = parse_expr(p);
+      } else {
+        case_node.kind = MATCH_CASE_VALUES;
+        dynamic_array_init(&case_node.values.values, sizeof(expr_node *));
+        dynamic_array_append(&case_node.values.values, &first_expr);
+
+        parser_current(p, &token);
+        while (token.kind == TOKEN_COMMA) {
+          parser_advance(p);
+
+          expr_node *next_expr = arena_push_struct(ast_arena, expr_node);
+          next_expr = parse_expr(p);
+          dynamic_array_append(&case_node.values.values, &next_expr);
+
+          parser_current(p, &token);
+        }
+      }
+    }
+
+    parser_current(p, &token);
+    if (token.kind != TOKEN_DARROW) {
+      scu_perror("Expected '=>' after match case pattern [line %d]\n",
+                 token.line);
+      scu_check_errors();
+    }
+    parser_advance(p);
+
+    parse_cond_block(p, &case_node.body);
+
+    dynamic_array_append(&instr->match.cases, &case_node);
+
+    parser_current(p, &token);
+  }
+
+  if (token.kind != TOKEN_RBRACE) {
+    scu_perror("expected '}' to close match block [line %d]\n", token.line);
+    scu_check_errors();
+  }
+  parser_advance(p);
 }
 
 /*
@@ -958,6 +1037,9 @@ static bool parse_instr(parser *p, instr_node *instr) {
     return true;
   case TOKEN_IF:
     parse_if(p, instr);
+    return true;
+  case TOKEN_MATCH:
+    parse_match(p, instr);
     return true;
   case TOKEN_GOTO:
     parse_goto(p, instr);
