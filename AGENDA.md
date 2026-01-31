@@ -1,103 +1,138 @@
 # Scalable, Compiled, Unambiguous Low-Level Language (Scull)
 
+**Legend:**
+
 - NEC - Necessary
 - EXP - Experimental
 - ? - Unsure and needs research
 
-## Compiler Related
+---
 
-- [x] NEC Seperate backend from frontend, have a clean backend interface integrate with main driver `src/sclc.c`
+## Phase 1: Core Compiler Infrastructure
 
-- [x] NEC Switch over to LLVM backend (use c bindings)
-  - Targets: x86_64, ARM64, RISCV64
+### Build System & Tooling
 
-- [x] NEC Handle LLVM target selection in cstate, rather than in backend.c or llvm.c
-
-- [x] NEC -S cli flag and --emit-llvm flag, and general CLI improvements
-
-- [x] NEC Parser bug fixes and proper memory management
-
-- [x] NEC Better error handling
-
-- [ ] NEC Test cases
-  - Lexer
-  - Parser
-  - Semantic
-  - Codegen / Backend
-  - End-to-End
-
+- [ ] NEC Move to CMake for better dependency handling
 - [ ] NEC Better arena implementation with chaining
+- [ ] NEC Only emit output file in current directory unless specified, else use `/tmp`
+- [x] NEC Separate backend from frontend, clean backend interface in `src/sclc.c`
+- [x] NEC Separate stack-based and heap-based allocations
 
-- [x] NEC Seperate stack based and heap based allocations, see whats really needed and whats unnecessary in sclc
+### Error Handling & Debugging
 
 - [ ] NEC Better errors
-  - [ ] fix existing bugs
-  - [ ] errors with source preview
+  - [ ] Fix existing bugs
+  - [ ] Errors with source preview
+- [ ] NEC Tab counting in AST printer
+- [x] NEC Better error handling (basic)
+- [x] NEC Parser bug fixes and proper memory management
 
-- [ ] NEC only emit the output file in current directory unless specified, else use `/tmp`
+### Testing
+
+- [ ] NEC Test cases
+  - [ ] Lexer
+  - [ ] Parser
+  - [ ] Semantic analysis
+  - [ ] Codegen / Backend
+  - [ ] End-to-End
+
+---
+
+## Phase 2: Backend & Code Generation
+
+### LLVM Backend
+
+- [x] NEC Switch to LLVM backend (C bindings)
+  - Targets: x86_64, ARM64, RISCV64
+- [x] NEC Handle LLVM target selection in cstate
+- [x] NEC `-S` CLI flag and `--emit-llvm` flag, general CLI improvements
+
+### Alternative Backends
 
 - [ ] NEC Develop C Backend
-  - Language related changes which would facilitate 1:1 C translation are needed (basic types, structs, unions, enums, memory management, etc)
+  - Language changes for 1:1 C translation needed
+  - Basic types, structs, unions, enums, memory management, etc.
 
-- [ ] EXP Build with [jart/cosmopolitan](https://github.com/jart/cosmopolitan) for future portability.
+### Distribution
 
-- [ ] EXP Bootstrapping Strategy: (inspired from Zig)
-  - Generated C code (one file) of the compiler source ships with release (need custom c backend for this)
-  - User compiles the bootstrap binary with the system c compiler
-  - User uses the bootstrap binary to compile source
+- [ ] EXP Build with [jart/cosmopolitan](https://github.com/jart/cosmopolitan) for fat binary portability
+- [ ] EXP Bootstrapping Strategy (inspired by Zig):
+  - Generated C code (one file) of compiler source ships with release
+  - User compiles bootstrap binary with system C compiler
+  - User uses bootstrap binary to compile source
   - Native scull binary available
 
-## Language Related
+---
 
-- [x] NEC Strings
+## Phase 3: Core Language Features
 
-- [ ] NEC control flow
-  - [x] if
-  - [x] else
-  - [x] else if
-  - [ ] switch case
-  - [ ] ternary operator
+### Type System
 
-- [ ] NEC Negative numbers
+- [ ] NEC `void` type
+- [ ] NEC Unsigned ints (`u32`) and signed ints (`i32`)
+- [ ] NEC Boolean type
+- [ ] NEC Type casting
+- [ ] NEC Typedefs
 
-- [ ] NEC Better type system
-  - [ ] void
-  - [ ] unsigned ints (u32) and signed ints (i32) instead of existing
-  - [ ] structs
-  - [ ] unions
-  - [ ] enums
+### Control Flow
 
-- [ ] NEC Multi-dimensional arrays
-
-- [ ] NEC Operators
-  - [ ] Logical
-  - [ ] Bitwise
-  - [ ] Assignment
-
+- [x] NEC If statement
+- [x] NEC Else statement
+- [x] NEC Else if statement
+- [x] NEC Switch/match statement
 - [ ] NEC For loop
-
+- [ ] NEC Ternary operator-like functionality using if-elseif-else in assignment
 - [ ] EXP For-each loop
 
-- [ ] NEC preprocessor Macros
+### Operators
 
-- [ ] NEC Some alternative for sizeof()
+- [ ] NEC Logical operators (`&&`, `||`, `!`)
+- [ ] NEC Bitwise operators (`&`, `|`, `^`, `~`, `<<`, `>>`)
+- [ ] NEC Assignment operators (`+=`, `-=`, `*=`, `/=`, etc.)
 
-- [ ] NEC Implementation blocks for user defined data types
+### Basic Features
 
-- [ ] NEC io.scl refresh using functions
+- [x] NEC Strings
+- [x] NEC Negative numbers
+- [ ] NEC Multi-dimensional arrays
+- [ ] NEC Alternative for `sizeof()`
 
+---
+
+## Phase 4: Advanced Language Features
+
+### User-Defined Types
+
+- [ ] NEC Structs
+- [ ] NEC Unions
+- [ ] NEC Enums
+- [ ] NEC Implementation blocks for user-defined data types
+- [ ] EXP Traits / Interfaces
+
+### Metaprogramming
+
+- [ ] NEC Preprocessor macros
+- [ ] EXP Compile-time functions (evaluated at compile time)
+- [ ] EXP Inline functions (copy and paste like C)
+
+### Standard Library
+
+- [ ] NEC Refresh `io.scl` using functions
 - [ ] NEC Standard Library
-  - [ ] Dynamic Memory management
+  - [ ] Dynamic memory management
+  - [ ] String manipulation
+  - [ ] File I/O
+  - [ ] Collections
 
-- [ ] EXP Modular / Constraints in type system (runtime overhead)
+---
 
-```
-  int mod(5) counter = 4
-```
+## Phase 5: Experimental Features
+
+### Advanced Type System
 
 - [ ] EXP Nullable types
 
-```
+```scl
   int definately = 9
   int? maybe = null
 
@@ -105,25 +140,68 @@
   int? *maybe_ptr = null
 ```
 
+- [ ] EXP Optional chaining
+
+```scl
+  printf("%s\n", object?.name)
+  // Prints null if object.name doesn't exist
+```
+
+- [ ] EXP Modular/Constraints in type system (runtime overhead)
+
+```scl
+  int mod(5) counter = 4
+```
+
 - [ ] EXP Arbitrary width for types
 
-```
+```scl
   int:7 smol = 2
 ```
 
-- [ ] EXP Result enum similar to rust
+- [ ] EXP Distinct typedefs (cannot be cast to other typedefs wrapping the same types)
 
-```
+- [ ] EXP Packed structs without padding (runtime overhead)
+
+### Error Handling
+
+- [ ] EXP Result enum similar to Rust
+
+```scl
   fn divide(int a, int b) : Result<int, Err> {
-    if (b == 0) then return Err.DivisionByZero
+    if b == 0 then return Err.DivisionByZero
     return a / b
   }
 ```
 
-- [ ] EXP Distinct typedefs, cannot be cast to other typedefs wrapping over the same types
+---
 
-- [ ] EXP Expansion of above, packed structs (without padding) (also has runtime overhead)
+## Abstract Roadmap
 
-- [ ] EXP Compile time functions (evaluated at compile time)
+### v0.0 (MVP / Diploma Final Year Project Ready)
 
-- [ ] EXP Inline functions (copy and paste like C)
+- Basic compiler infrastructure
+- Core type system (int, char, bool, void)
+- All control flow
+- All operators
+- Arrays
+- Functions
+
+### v0.1
+
+- C backend + Initiate bootstrap
+- Structs, unions, enums
+- Implementation blocks
+- Standard library basics (dependency on libc can still exist)
+
+### v0.2
+
+- Partial Bootstrap
+- Full standard library
+- Traits/interfaces
+
+### v1.0+
+
+- Full bootstrap
+- Based on user feedback
+- Choose 2-3 experimental features to stabilize
