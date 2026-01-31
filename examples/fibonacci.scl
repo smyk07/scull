@@ -6,8 +6,8 @@ fn main() : int {
   printf("Enter a number: ")
   scanf("%d", &n)
   
-  if n == 0 then printf("0\n") 
-  if n == 1 then printf("1\n") 
+  if n == 0 printf("0\n") 
+  if n == 1 printf("1\n") 
   
   int a = 0
   int b = 1

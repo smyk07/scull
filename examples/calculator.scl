@@ -1,0 +1,102 @@
+-include "io.scl"
+
+fn calculate(int a, int b, char op) : int {
+  int result
+  
+  match op {
+    '+' => result = a + b
+    '-' => result = a - b
+    '*' => result = a * b
+    '/' => {
+      if b == 0 {
+        printf("Error: Division by zero\n")
+        result = 0
+      } else {
+        result = a / b
+      }
+    }
+    '%' => {
+      if b == 0 {
+        printf("Error: Modulo by zero\n")
+        result = 0
+      } else {
+        result = a % b
+      }
+    }
+    _ => {
+      printf("Error: Unknown operator\n")
+      result = 0
+    }
+  }
+  
+  return result
+}
+
+fn get_grade(int score) : char {
+  char grade
+  
+  match score {
+    90...100 => grade = 'A'
+    80...89 => grade = 'B'
+    70...79 => grade = 'C'
+    60...69 => grade = 'D'
+    0...59 => grade = 'F'
+    _ => {
+      printf("Invalid score\n")
+      grade = '?'
+    }
+  }
+  
+  return grade
+}
+
+fn main() : int {
+  int choice
+  
+  printf("=== Menu ===\n")
+  printf("1. Calculator\n")
+  printf("2. Grade Calculator\n")
+  printf("3. Exit\n")
+  printf("Enter choice: ")
+  scanf("%d", &choice)
+  
+  match choice {
+    1 => {
+      int a
+      int b
+      char op
+      
+      printf("Enter first number: ")
+      scanf("%d", &a)
+      printf("Enter operator (+, -, *, /, %%): ")
+      scanf(" %c", &op)
+      printf("Enter second number: ")
+      scanf("%d", &b)
+      
+      int result
+      result = calculate(a, b, op)
+      printf("Result: %d\n", result)
+    }
+    
+    2 => {
+      int score
+      
+      printf("Enter score (0-100): ")
+      scanf("%d", &score)
+      
+      char grade
+      grade = get_grade(score)
+      printf("Grade: %c\n", grade)
+    }
+    
+    3 => {
+      printf("Goodbye!\n")
+    }
+    
+    _ => {
+      printf("Invalid choice\n")
+    }
+  }
+  
+  return 0
+}

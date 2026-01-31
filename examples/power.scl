@@ -9,7 +9,7 @@ fn main() : int {
   printf("Enter base and exponent: ")
   scanf("%d%d", &base, &exponent)
   
-  if exponent == 0 then goto :end
+  if exponent == 0 goto :end
   
   while counter < exponent {
     result = result * base
