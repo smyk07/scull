@@ -1,0 +1,22 @@
+-include "io.scl"
+
+fn main() : int {
+  for i in 1...100 {
+    int mod3 = i % 3
+    int mod5 = i % 5
+
+    if mod3 == 0 {
+      if mod5 == 0 {
+        printf("FizzBuzz\n")
+      } else {
+        printf("Fizz\n")
+      }
+    } else if mod5 == 0 {
+      printf("Buzz\n")
+    } else {
+      printf("%d\n", i)
+    }
+  }
+
+  return 0
+}
