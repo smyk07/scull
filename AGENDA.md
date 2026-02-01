@@ -10,11 +10,12 @@
 
 ## Phase 1: Core Compiler Infrastructure
 
-### Build System & Tooling
+### Build System, Tooling, Infrastructure & UX
 
 - [ ] NEC Move to CMake for better dependency handling
 - [ ] NEC Better arena implementation with chaining
-- [ ] NEC Only emit output file in current directory unless specified, else use `/tmp`
+- [ ] NEC Only emit output file in current directory unless specified with `-c`, else use `/tmp`
+- [ ] NEC Add `-O` cli option
 - [x] NEC Separate backend from frontend, clean backend interface in `src/sclc.c`
 - [x] NEC Separate stack-based and heap-based allocations
 
@@ -71,8 +72,9 @@
 - [ ] NEC `void` type
 - [ ] NEC Unsigned ints (`u32`) and signed ints (`i32`)
 - [ ] NEC Boolean type
-- [ ] NEC Type casting
 - [ ] NEC Typedefs
+- [ ] ? Type casting
+- [ ] ? Type inference
 
 ### Control Flow
 
@@ -81,6 +83,9 @@
 - [x] NEC Else if statement
 - [x] NEC Switch/match statement
 - [ ] NEC For loop
+  - [x] Basic implementation
+  - [ ] Typing for iterator
+  - [ ] looping through arrays
 - [ ] NEC Ternary operator-like functionality using if-elseif-else in assignment
 - [ ] EXP For-each loop
 
