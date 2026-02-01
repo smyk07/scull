@@ -76,15 +76,15 @@ static void parse_term_for_expr(parser *p, term_node *term) {
 
   parser_current(p, &token);
   term->line = token.line;
-  if (token.kind == TOKEN_INT) {
+  if (token.kind == TOKEN_INT_LITERAL) {
     term->kind = TERM_INT;
     term->value.integer = token.value.integer;
     parser_advance(p);
-  } else if (token.kind == TOKEN_CHAR) {
+  } else if (token.kind == TOKEN_CHAR_LITERAL) {
     term->kind = TERM_CHAR;
     term->value.character = token.value.character;
     parser_advance(p);
-  } else if (token.kind == TOKEN_STRING) {
+  } else if (token.kind == TOKEN_STRING_LITERAL) {
     term->kind = TERM_STRING;
     term->value.str = token.value.str;
     parser_advance(p);
@@ -156,24 +156,24 @@ static void parse_term_for_expr(parser *p, term_node *term) {
 static expr_node *parse_factor(parser *p) {
   token token = {0};
   parser_current(p, &token);
-  if (token.kind == TOKEN_INT || token.kind == TOKEN_CHAR ||
+  if (token.kind == TOKEN_INT_LITERAL || token.kind == TOKEN_CHAR_LITERAL ||
       token.kind == TOKEN_IDENTIFIER || token.kind == TOKEN_POINTER ||
-      token.kind == TOKEN_STRING || token.kind == TOKEN_ADDRESS_OF) {
+      token.kind == TOKEN_STRING_LITERAL || token.kind == TOKEN_ADDRESS_OF) {
     expr_node *node = arena_push_struct(ast_arena, expr_node);
     node->kind = EXPR_TERM;
     node->line = token.line;
 
-    if (token.kind == TOKEN_INT) {
+    if (token.kind == TOKEN_INT_LITERAL) {
       node->term.kind = TERM_INT;
       node->term.value.integer = token.value.integer;
       parser_advance(p);
       return node;
-    } else if (token.kind == TOKEN_CHAR) {
+    } else if (token.kind == TOKEN_CHAR_LITERAL) {
       node->term.kind = TERM_CHAR;
       node->term.value.character = token.value.character;
       parser_advance(p);
       return node;
-    } else if (token.kind == TOKEN_STRING) {
+    } else if (token.kind == TOKEN_STRING_LITERAL) {
       node->term.kind = TERM_STRING;
       node->term.value.str = token.value.str;
       parser_advance(p);

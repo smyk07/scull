@@ -43,11 +43,11 @@ const char *lexer_token_kind_to_str(token_kind kind) {
   case TOKEN_PDIR_INCLUDE:
     return "pdir_include";
 
-  case TOKEN_INT:
+  case TOKEN_INT_LITERAL:
     return "int";
-  case TOKEN_CHAR:
+  case TOKEN_CHAR_LITERAL:
     return "char";
-  case TOKEN_STRING:
+  case TOKEN_STRING_LITERAL:
     return "string";
 
   case TOKEN_IDENTIFIER:
@@ -127,13 +127,13 @@ void lexer_print_tokens(dynamic_array *tokens) {
     printf("%s", kind);
 
     switch (token.kind) {
-    case TOKEN_INT:
+    case TOKEN_INT_LITERAL:
       printf("(%d)", token.value.integer);
       break;
-    case TOKEN_CHAR:
+    case TOKEN_CHAR_LITERAL:
       printf("(%c)", token.value.character);
       break;
-    case TOKEN_STRING:
+    case TOKEN_STRING_LITERAL:
       printf(" \"%s\"", token.value.str);
       break;
     case TOKEN_POINTER:
@@ -156,7 +156,7 @@ void free_tokens(dynamic_array *tokens) {
     token *token = tokens->items + (i * tokens->item_size);
     if (token->kind == TOKEN_IDENTIFIER || token->kind == TOKEN_LABEL ||
         token->kind == TOKEN_INVALID || token->kind == TOKEN_ADDRESS_OF ||
-        token->kind == TOKEN_POINTER || token->kind == TOKEN_STRING) {
+        token->kind == TOKEN_POINTER || token->kind == TOKEN_STRING_LITERAL) {
       free(token->value.str);
     }
   }

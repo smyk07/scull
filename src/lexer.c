@@ -122,217 +122,6 @@ restart:
     return (token){.kind = TOKEN_END, .value.str = NULL, .line = l->line};
   }
 
-  else if (l->ch == '=') {
-    lexer_read_char(l);
-    if (l->ch == '=') {
-      lexer_read_char(l);
-      return (token){
-          .kind = TOKEN_IS_EQUAL, .value.str = NULL, .line = l->line};
-    } else if (l->ch == '>') {
-      lexer_read_char(l);
-      return (token){.kind = TOKEN_DARROW, .value.str = NULL, .line = l->line};
-    }
-    return (token){.kind = TOKEN_ASSIGN, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '!') {
-    lexer_read_char(l);
-    if (l->ch == '=') {
-      lexer_read_char(l);
-      return (token){
-          .kind = TOKEN_NOT_EQUAL, .value.str = NULL, .line = l->line};
-    }
-    string_slice slice = {.str = "!", .len = 1};
-    char *value = NULL;
-    string_slice_to_owned(&slice, &value);
-    return (token){.kind = TOKEN_INVALID, .value.str = value, .line = l->line};
-  }
-
-  else if (l->ch == '(') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_LPAREN, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == ')') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_RPAREN, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '{') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_LBRACE, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '}') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_RBRACE, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '[') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_LSQBR, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == ']') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_RSQBR, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == ',') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_COMMA, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '_') {
-    lexer_read_char(l);
-    return (token){
-        .kind = TOKEN_UNDERSCORE, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '-') {
-    lexer_read_char(l);
-    if (l->ch == '-') {
-      while (l->ch != '\n') {
-        lexer_read_char(l);
-      }
-      goto restart;
-    } else if (l->ch == '*') {
-      while (l->ch != '\0') {
-        if (l->ch == '*') {
-          lexer_read_char(l);
-          if (l->ch == '-') {
-            lexer_read_char(l);
-            goto restart;
-          }
-          continue;
-        } else {
-          lexer_read_char(l);
-          continue;
-        }
-        return (token){
-            .kind = TOKEN_INVALID, .value.character = l->ch, .line = l->line};
-      }
-    } else if (isdigit(l->ch)) {
-      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
-      while (isdigit(l->ch)) {
-        slice.len += 1;
-        lexer_read_char(l);
-      }
-      char *temp = NULL;
-      string_slice_to_owned(&slice, &temp);
-
-      int value = -atoi(temp);
-      free(temp);
-
-      return (token){
-          .kind = TOKEN_INT, .value.integer = value, .line = l->line};
-    } else if (isalnum(l->ch)) {
-      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
-      while (isalnum(l->ch) || l->ch == '_') {
-        slice.len += 1;
-        lexer_read_char(l);
-      }
-      char *directive = NULL;
-      string_slice_to_owned(&slice, &directive);
-      if (strcmp(directive, "include") == 0) {
-        free(directive);
-        return (token){
-            .kind = TOKEN_PDIR_INCLUDE, .value.str = NULL, .line = l->line};
-      }
-    }
-    return (token){.kind = TOKEN_SUBTRACT, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '+') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_ADD, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '*') {
-    lexer_read_char(l);
-
-    if (isalnum(l->ch) || l->ch == '_') {
-      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
-      while (isalnum(l->ch) || l->ch == '_') {
-        slice.len += 1;
-        lexer_read_char(l);
-      }
-      char *value = NULL;
-      string_slice_to_owned(&slice, &value);
-      return (token){
-          .kind = TOKEN_POINTER, .value.str = value, .line = l->line};
-    }
-
-    return (token){.kind = TOKEN_MULTIPLY, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '/') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_DIVIDE, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '%') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_MODULO, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '&') {
-    lexer_read_char(l);
-    string_slice slice = {.str = l->buffer + l->pos, .len = 0};
-    while (isalnum(l->ch) || l->ch == '_') {
-      slice.len += 1;
-      lexer_read_char(l);
-    }
-    char *value = NULL;
-    string_slice_to_owned(&slice, &value);
-    return (token){
-        .kind = TOKEN_ADDRESS_OF, .value.str = value, .line = l->line};
-  }
-
-  else if (l->ch == '<') {
-    lexer_read_char(l);
-    if (l->ch == '=') {
-      lexer_read_char(l);
-      return (token){
-          .kind = TOKEN_LESS_THAN_OR_EQUAL, .value.str = NULL, .line = l->line};
-    }
-    return (token){.kind = TOKEN_LESS_THAN, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == '>') {
-    lexer_read_char(l);
-    if (l->ch == '=') {
-      lexer_read_char(l);
-      return (token){.kind = TOKEN_GREATER_THAN_OR_EQUAL,
-                     .value.str = NULL,
-                     .line = l->line};
-    }
-    return (token){
-        .kind = TOKEN_GREATER_THAN, .value.str = NULL, .line = l->line};
-  }
-
-  else if (l->ch == ':') {
-    lexer_read_char(l);
-
-    if (isalnum(l->ch) || l->ch == '_') {
-      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
-      while (isalnum(l->ch) || l->ch == '_') {
-        slice.len += 1;
-        lexer_read_char(l);
-      }
-      char *value = NULL;
-      string_slice_to_owned(&slice, &value);
-      return (token){.kind = TOKEN_LABEL, .value.str = value, .line = l->line};
-    } else {
-      return (token){.kind = TOKEN_COLON, .value.str = NULL, .line = l->line};
-    }
-  }
-
-  else if (l->ch == ':') {
-    lexer_read_char(l);
-    return (token){.kind = TOKEN_COLON, .value.str = NULL, .line = l->line};
-  }
-
   else if (isdigit(l->ch)) {
     string_slice slice = {.str = l->buffer + l->pos, .len = 0};
     while (isdigit(l->ch)) {
@@ -345,7 +134,8 @@ restart:
     int value = atoi(temp);
     free(temp);
 
-    return (token){.kind = TOKEN_INT, .value.integer = value, .line = l->line};
+    return (token){
+        .kind = TOKEN_INT_LITERAL, .value.integer = value, .line = l->line};
   }
 
   else if (l->ch == '\'') {
@@ -386,8 +176,9 @@ restart:
     }
     lexer_read_char(l);
 
-    return (token){
-        .kind = TOKEN_CHAR, .value.character = char_value, .line = l->line};
+    return (token){.kind = TOKEN_CHAR_LITERAL,
+                   .value.character = char_value,
+                   .line = l->line};
   }
 
   else if (l->ch == '"') {
@@ -400,8 +191,9 @@ restart:
     if (l->ch == '"') {
       lexer_read_char(l);
       string_value[0] = '\0';
-      return (token){
-          .kind = TOKEN_STRING, .value.str = string_value, .line = l->line};
+      return (token){.kind = TOKEN_STRING_LITERAL,
+                     .value.str = string_value,
+                     .line = l->line};
     }
 
     while (l->ch != '"' && l->ch != '\0' && l->ch != EOF) {
@@ -455,8 +247,159 @@ restart:
     lexer_read_char(l);
     string_value[length] = '\0';
 
+    return (token){.kind = TOKEN_STRING_LITERAL,
+                   .value.str = string_value,
+                   .line = l->line};
+  }
+
+#define LEX_ONE_CHAR_TOKEN(chr, tok_kind)                                      \
+  else if (l->ch == chr) {                                                     \
+    lexer_read_char(l);                                                        \
+    return (token){.kind = tok_kind, .value.str = NULL, .line = l->line};      \
+  }
+
+#define LEX_TWO_CHAR_TOKEN(ch1, ch2, tok_kind, fallback_kind)                  \
+  else if (l->ch == ch1) {                                                     \
+    lexer_read_char(l);                                                        \
+    if (l->ch == ch2) {                                                        \
+      lexer_read_char(l);                                                      \
+      return (token){.kind = tok_kind, .value.str = NULL, .line = l->line};    \
+    }                                                                          \
+    return (token){.kind = fallback_kind, .value.str = NULL, .line = l->line}; \
+  }
+
+  // Delimiters
+  LEX_ONE_CHAR_TOKEN('(', TOKEN_LPAREN)
+  LEX_ONE_CHAR_TOKEN(')', TOKEN_RPAREN)
+  LEX_ONE_CHAR_TOKEN('{', TOKEN_LBRACE)
+  LEX_ONE_CHAR_TOKEN('}', TOKEN_RBRACE)
+  LEX_ONE_CHAR_TOKEN('[', TOKEN_LSQBR)
+  LEX_ONE_CHAR_TOKEN(']', TOKEN_RSQBR)
+  LEX_ONE_CHAR_TOKEN(',', TOKEN_COMMA)
+  LEX_ONE_CHAR_TOKEN('_', TOKEN_UNDERSCORE)
+
+  // Simple arithmetic operators
+  LEX_ONE_CHAR_TOKEN('+', TOKEN_ADD)
+  LEX_ONE_CHAR_TOKEN('/', TOKEN_DIVIDE)
+  LEX_ONE_CHAR_TOKEN('%', TOKEN_MODULO)
+
+  // Relational Operators
+  LEX_TWO_CHAR_TOKEN('!', '=', TOKEN_NOT_EQUAL, TOKEN_INVALID)
+  LEX_TWO_CHAR_TOKEN('<', '=', TOKEN_LESS_THAN_OR_EQUAL, TOKEN_LESS_THAN)
+  LEX_TWO_CHAR_TOKEN('>', '=', TOKEN_GREATER_THAN_OR_EQUAL, TOKEN_GREATER_THAN)
+
+#undef LEX_ONE_CHAR_TOKEN
+#undef LEX_TWO_CHAR_TOKEN
+
+  else if (l->ch == '=') {
+    lexer_read_char(l);
+    if (l->ch == '=') {
+      lexer_read_char(l);
+      return (token){
+          .kind = TOKEN_IS_EQUAL, .value.str = NULL, .line = l->line};
+    } else if (l->ch == '>') {
+      lexer_read_char(l);
+      return (token){.kind = TOKEN_DARROW, .value.str = NULL, .line = l->line};
+    }
+    return (token){.kind = TOKEN_ASSIGN, .value.str = NULL, .line = l->line};
+  }
+
+  else if (l->ch == '-') {
+    lexer_read_char(l);
+    if (l->ch == '-') {
+      while (l->ch != '\n') {
+        lexer_read_char(l);
+      }
+      goto restart;
+    } else if (l->ch == '*') {
+      while (l->ch != '\0') {
+        if (l->ch == '*') {
+          lexer_read_char(l);
+          if (l->ch == '-') {
+            lexer_read_char(l);
+            goto restart;
+          }
+          continue;
+        } else {
+          lexer_read_char(l);
+          continue;
+        }
+        return (token){
+            .kind = TOKEN_INVALID, .value.character = l->ch, .line = l->line};
+      }
+    } else if (isdigit(l->ch)) {
+      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
+      while (isdigit(l->ch)) {
+        slice.len += 1;
+        lexer_read_char(l);
+      }
+      char *temp = NULL;
+      string_slice_to_owned(&slice, &temp);
+      int value = -atoi(temp);
+      free(temp);
+      return (token){
+          .kind = TOKEN_INT_LITERAL, .value.integer = value, .line = l->line};
+    } else if (isalnum(l->ch)) {
+      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
+      while (isalnum(l->ch) || l->ch == '_') {
+        slice.len += 1;
+        lexer_read_char(l);
+      }
+      char *directive = NULL;
+      string_slice_to_owned(&slice, &directive);
+      if (strcmp(directive, "include") == 0) {
+        free(directive);
+        return (token){
+            .kind = TOKEN_PDIR_INCLUDE, .value.str = NULL, .line = l->line};
+      }
+    }
+    return (token){.kind = TOKEN_SUBTRACT, .value.str = NULL, .line = l->line};
+  }
+
+  else if (l->ch == '*') {
+    lexer_read_char(l);
+    if (isalnum(l->ch) || l->ch == '_') {
+      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
+      while (isalnum(l->ch) || l->ch == '_') {
+        slice.len += 1;
+        lexer_read_char(l);
+      }
+      char *value = NULL;
+      string_slice_to_owned(&slice, &value);
+      return (token){
+          .kind = TOKEN_POINTER, .value.str = value, .line = l->line};
+    }
+    return (token){.kind = TOKEN_MULTIPLY, .value.str = NULL, .line = l->line};
+  }
+
+  else if (l->ch == '&') {
+    lexer_read_char(l);
+    string_slice slice = {.str = l->buffer + l->pos, .len = 0};
+    while (isalnum(l->ch) || l->ch == '_') {
+      slice.len += 1;
+      lexer_read_char(l);
+    }
+    char *value = NULL;
+    string_slice_to_owned(&slice, &value);
     return (token){
-        .kind = TOKEN_STRING, .value.str = string_value, .line = l->line};
+        .kind = TOKEN_ADDRESS_OF, .value.str = value, .line = l->line};
+  }
+
+  else if (l->ch == ':') {
+    lexer_read_char(l);
+
+    if (isalnum(l->ch) || l->ch == '_') {
+      string_slice slice = {.str = l->buffer + l->pos, .len = 0};
+      while (isalnum(l->ch) || l->ch == '_') {
+        slice.len += 1;
+        lexer_read_char(l);
+      }
+      char *value = NULL;
+      string_slice_to_owned(&slice, &value);
+      return (token){.kind = TOKEN_LABEL, .value.str = value, .line = l->line};
+    } else {
+      return (token){.kind = TOKEN_COLON, .value.str = NULL, .line = l->line};
+    }
   }
 
   else if (l->ch == '.') {
@@ -486,94 +429,40 @@ restart:
     char *value = NULL;
     string_slice_to_owned(&slice, &value);
 
-    if (strcmp(value, "goto") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_GOTO, .value.str = NULL, .line = l->line};
-    }
+#define LEX_KEYWORD(keyword_str, tok_kind)                                     \
+  if (strcmp(value, keyword_str) == 0) {                                       \
+    free(value);                                                               \
+    return (token){.kind = tok_kind, .value.str = NULL, .line = l->line};      \
+  }
 
-    else if (strcmp(value, "if") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_IF, .value.str = NULL, .line = l->line};
-    }
+    // Types
+    LEX_KEYWORD("int", TOKEN_TYPE_INT)
+    LEX_KEYWORD("char", TOKEN_TYPE_CHAR)
 
-    else if (strcmp(value, "else") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_ELSE, .value.str = NULL, .line = l->line};
-    }
+    // Control flow
+    LEX_KEYWORD("if", TOKEN_IF)
+    LEX_KEYWORD("else", TOKEN_ELSE)
+    LEX_KEYWORD("then", TOKEN_THEN)
+    LEX_KEYWORD("match", TOKEN_MATCH)
+    LEX_KEYWORD("goto", TOKEN_GOTO)
 
-    else if (strcmp(value, "then") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_THEN, .value.str = NULL, .line = l->line};
-    }
+    // Loops
+    LEX_KEYWORD("loop", TOKEN_LOOP)
+    LEX_KEYWORD("while", TOKEN_WHILE)
+    LEX_KEYWORD("dowhile", TOKEN_DO_WHILE)
+    LEX_KEYWORD("in", TOKEN_IN)
+    LEX_KEYWORD("for", TOKEN_FOR)
+    LEX_KEYWORD("continue", TOKEN_CONTINUE)
+    LEX_KEYWORD("break", TOKEN_BREAK)
 
-    else if (strcmp(value, "match") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_MATCH, .value.str = NULL, .line = l->line};
-    }
+    // Functions
+    LEX_KEYWORD("fn", TOKEN_FN)
+    LEX_KEYWORD("return", TOKEN_RETURN)
 
-    else if (strcmp(value, "int") == 0) {
-      free(value);
-      return (token){
-          .kind = TOKEN_TYPE_INT, .value.str = NULL, .line = l->line};
-    }
+#undef LEX_KEYWORD
 
-    else if (strcmp(value, "char") == 0) {
-      free(value);
-      return (token){
-          .kind = TOKEN_TYPE_CHAR, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "loop") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_LOOP, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "while") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_WHILE, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "dowhile") == 0) {
-      free(value);
-      return (token){
-          .kind = TOKEN_DO_WHILE, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "in") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_IN, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "for") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_FOR, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "continue") == 0) {
-      free(value);
-      return (token){
-          .kind = TOKEN_CONTINUE, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "break") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_BREAK, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "fn") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_FN, .value.str = NULL, .line = l->line};
-    }
-
-    else if (strcmp(value, "return") == 0) {
-      free(value);
-      return (token){.kind = TOKEN_RETURN, .value.str = NULL, .line = l->line};
-    }
-
-    else {
-      return (token){
-          .kind = TOKEN_IDENTIFIER, .value.str = value, .line = l->line};
-    }
+    return (token){
+        .kind = TOKEN_IDENTIFIER, .value.str = value, .line = l->line};
   }
 
   else {
