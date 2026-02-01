@@ -24,6 +24,8 @@ typedef enum token_kind {
   TOKEN_LOOP,
   TOKEN_WHILE,
   TOKEN_DO_WHILE,
+  TOKEN_IN,
+  TOKEN_FOR,
   TOKEN_CONTINUE,
   TOKEN_BREAK,
   TOKEN_FN,

@@ -539,6 +539,16 @@ restart:
           .kind = TOKEN_DO_WHILE, .value.str = NULL, .line = l->line};
     }
 
+    else if (strcmp(value, "in") == 0) {
+      free(value);
+      return (token){.kind = TOKEN_IN, .value.str = NULL, .line = l->line};
+    }
+
+    else if (strcmp(value, "for") == 0) {
+      free(value);
+      return (token){.kind = TOKEN_FOR, .value.str = NULL, .line = l->line};
+    }
+
     else if (strcmp(value, "continue") == 0) {
       free(value);
       return (token){

@@ -246,13 +246,31 @@ typedef struct label_node {
 typedef enum loop_kind {
   LOOP_UNCONDITIONAL = 0,
   LOOP_WHILE,
-  LOOP_DO_WHILE
+  LOOP_DO_WHILE,
+  LOOP_FOR
 } loop_kind;
 
 typedef struct loop_node {
   loop_kind kind;
-  rel_node break_condition;
+
+  ht *variables;
   dynamic_array instrs;
+
+  union {
+    struct {
+      uint8_t placeholder_buffer;
+    } unconditional;
+
+    struct {
+      rel_node break_condition;
+    } conditional;
+
+    struct {
+      variable iterator;
+      expr_node *range_start;
+      expr_node *range_end;
+    } _for;
+  };
 } loop_node;
 
 typedef enum fn_kind {

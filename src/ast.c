@@ -350,15 +350,26 @@ void print_instr(instr_node *instr) {
     case LOOP_UNCONDITIONAL:
       printf("loop starts: \n");
       break;
+
     case LOOP_WHILE:
       printf("while loop starts, break condition: ");
-      check_rel_node_and_print(&instr->loop.break_condition);
+      check_rel_node_and_print(&instr->loop.conditional.break_condition);
       break;
+
     case LOOP_DO_WHILE:
       printf("do-while-loop starts, break condition: ");
-      check_rel_node_and_print(&instr->loop.break_condition);
+      check_rel_node_and_print(&instr->loop.conditional.break_condition);
+      break;
+
+    case LOOP_FOR:
+      printf("for %s in ", instr->loop._for.iterator.name);
+      check_expr_and_print(instr->loop._for.range_start);
+      printf("...");
+      check_expr_and_print(instr->loop._for.range_end);
+      printf(" {\n");
       break;
     }
+
     for (unsigned int i = 0; i < instr->loop.instrs.count; i++) {
       instr_node _instr;
       dynamic_array_get(&instr->loop.instrs, i, &_instr);
@@ -654,7 +665,20 @@ static void free_instr(instr_node *instr) {
     break;
 
   case INSTR_LOOP:
-    free_rel_node(&instr->loop.break_condition);
+    switch (instr->loop.kind) {
+    case LOOP_DO_WHILE:
+    case LOOP_WHILE:
+      free_rel_node(&instr->loop.conditional.break_condition);
+      break;
+    case LOOP_FOR:
+      free_expr_node(instr->loop._for.range_start);
+      free_expr_node(instr->loop._for.range_end);
+      break;
+    case LOOP_UNCONDITIONAL:
+      break;
+    }
+
+    ht_destroy(instr->loop.variables);
     free_instrs(&instr->loop.instrs);
     break;
 

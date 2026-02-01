@@ -768,8 +768,19 @@ static void llvm_irgen_instr_loop(llvm_backend_ctx &ctx, loop_node *loop) {
   current_loop_header = loop_header;
   current_loop_exit = loop_exit;
 
-  ctx.builder->CreateBr(loop_header);
+  llvm::AllocaInst *iterator_ptr = nullptr;
+  if (loop->kind == LOOP_FOR) {
+    llvm::Type *i32_type = llvm::Type::getInt32Ty(*ctx.context);
+    iterator_ptr =
+        ctx.builder->CreateAlloca(i32_type, nullptr, loop->_for.iterator.name);
 
+    llvm::Value *start_val = llvm_irgen_expr(ctx, loop->_for.range_start);
+    ctx.builder->CreateStore(start_val, iterator_ptr);
+
+    named_values[loop->_for.iterator.name] = iterator_ptr;
+  }
+
+  ctx.builder->CreateBr(loop_header);
   ctx.builder->SetInsertPoint(loop_header);
 
   switch (loop->kind) {
@@ -779,7 +790,8 @@ static void llvm_irgen_instr_loop(llvm_backend_ctx &ctx, loop_node *loop) {
   }
 
   case LOOP_WHILE: {
-    llvm::Value *cond = llvm_irgen_relational(ctx, &loop->break_condition);
+    llvm::Value *cond =
+        llvm_irgen_relational(ctx, &loop->conditional.break_condition);
     if (!cond) {
       scu_perror(const_cast<char *>("Failed to generate while condition\n"));
       current_loop_header = prev_loop_header;
@@ -794,12 +806,21 @@ static void llvm_irgen_instr_loop(llvm_backend_ctx &ctx, loop_node *loop) {
     ctx.builder->CreateBr(loop_body);
     break;
   }
+
+  case LOOP_FOR: {
+    llvm::Value *current_val = ctx.builder->CreateLoad(
+        llvm::Type::getInt32Ty(*ctx.context), iterator_ptr, "iter.val");
+    llvm::Value *end_val = llvm_irgen_expr(ctx, loop->_for.range_end);
+    llvm::Value *cond =
+        ctx.builder->CreateICmpSLE(current_val, end_val, "for.cond");
+    ctx.builder->CreateCondBr(cond, loop_body, loop_exit);
+    break;
+  }
   }
 
   ctx.builder->SetInsertPoint(loop_body);
 
   for (size_t i = 0; i < loop->instrs.count; i++) {
-
     instr_node instr;
     dynamic_array_get(&loop->instrs, i, &instr);
 
@@ -810,9 +831,20 @@ static void llvm_irgen_instr_loop(llvm_backend_ctx &ctx, loop_node *loop) {
     }
   }
 
-  if (loop->kind == LOOP_DO_WHILE) {
+  if (loop->kind == LOOP_FOR) {
     if (!ctx.builder->GetInsertBlock()->getTerminator()) {
-      llvm::Value *cond = llvm_irgen_relational(ctx, &loop->break_condition);
+      llvm::Value *current_val = ctx.builder->CreateLoad(
+          llvm::Type::getInt32Ty(*ctx.context), iterator_ptr, "iter.val");
+      llvm::Value *next_val = ctx.builder->CreateAdd(
+          current_val, llvm::ConstantInt::get(*ctx.context, llvm::APInt(32, 1)),
+          "iter.next");
+      ctx.builder->CreateStore(next_val, iterator_ptr);
+      ctx.builder->CreateBr(loop_header);
+    }
+  } else if (loop->kind == LOOP_DO_WHILE) {
+    if (!ctx.builder->GetInsertBlock()->getTerminator()) {
+      llvm::Value *cond =
+          llvm_irgen_relational(ctx, &loop->conditional.break_condition);
       if (cond) {
         ctx.builder->CreateCondBr(cond, loop_header, loop_exit);
       } else {
@@ -823,6 +855,10 @@ static void llvm_irgen_instr_loop(llvm_backend_ctx &ctx, loop_node *loop) {
     if (!ctx.builder->GetInsertBlock()->getTerminator()) {
       ctx.builder->CreateBr(loop_header);
     }
+  }
+
+  if (loop->kind == LOOP_FOR) {
+    named_values.erase(loop->_for.iterator.name);
   }
 
   current_loop_header = prev_loop_header;

@@ -227,6 +227,47 @@ static void cond_block_check_variables(cond_block_node *blk, ht *variables,
 }
 
 /*
+ * @brief: check loop validity and body instructions
+ *
+ * @param loop: pointer to the loop node.
+ * @param variables: pointer to the parent scope's variables hash table.
+ * @param functions: pointer to the functions hash table.
+ */
+static void check_loop(loop_node *loop, ht *parent_variables, ht *functions) {
+  if (!loop)
+    return;
+
+  // copying the parent scope's variables into current scope so that semantics
+  // dont break.
+  // This is just a temporary solution
+  // TODO THIS NEEDS TO BE BETTER (along with a lot of other things)
+  for (size_t i = 0; i < parent_variables->capacity; i++) {
+    ht_item *item = parent_variables->items[i];
+    if (item && item->key && item->value) {
+      ht_insert(loop->variables, item->key, item->value);
+    }
+  }
+
+  if (loop->kind == LOOP_WHILE || loop->kind == LOOP_DO_WHILE) {
+    rel_check_variables(&loop->conditional.break_condition, loop->variables,
+                        functions);
+  } else if (loop->kind == LOOP_FOR) {
+    expr_check_variables(loop->_for.range_start, loop->variables, functions);
+    expr_check_variables(loop->_for.range_end, loop->variables, functions);
+
+    declare_variables(&loop->_for.iterator, loop->variables);
+  }
+
+  for (size_t i = 0; i < loop->instrs.count; i++) {
+    instr_node instr;
+    dynamic_array_get(&loop->instrs, i, &instr);
+
+    instr_check_variables(&instr, loop->variables, functions);
+    instr_typecheck(&instr, loop->variables, functions);
+  }
+}
+
+/*
  * @brief: check variables in an individual instruction
  *
  * @param instr: pointer to an instr_node.
@@ -314,15 +355,7 @@ static void instr_check_variables(instr_node *instr, ht *variables,
     break;
 
   case INSTR_LOOP:
-    if (instr->loop.kind == LOOP_WHILE) {
-      rel_check_variables(&instr->loop.break_condition, variables, functions);
-    }
-    for (size_t i = 0; i < instr->loop.instrs.count; i++) {
-      instr_node instr_;
-      dynamic_array_get(&instr->loop.instrs, i, &instr_);
-      instr_check_variables(&instr_, variables, functions);
-      instr_typecheck(&instr_, variables, functions);
-    }
+    check_loop(&instr->loop, variables, functions);
     break;
 
   default:

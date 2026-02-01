@@ -827,23 +827,76 @@ static void parse_loop(parser *p, instr_node *instr, loop_kind kind) {
   instr->kind = INSTR_LOOP;
   instr->line = token.line;
   instr->loop.kind = kind;
-  dynamic_array_init(&instr->loop.instrs, sizeof(instr_node));
 
   parser_advance(p);
 
-  if (kind == LOOP_WHILE) {
+  if (kind == LOOP_FOR) {
     parser_current(p, &token);
-    parse_rel(p, &instr->loop.break_condition);
+
+    if (token.kind != TOKEN_IDENTIFIER) {
+      scu_perror("expected identifier after 'for' [line %d]\n", token.line);
+      scu_check_errors();
+    }
+
+    instr->loop._for.iterator.name = token.value.str;
+    instr->loop._for.iterator.type = TYPE_INT;
+
+    parser_advance(p);
+    parser_current(p, &token);
+
+    if (token.kind != TOKEN_IN) {
+      scu_perror("expected 'in' after loop variable [line %d]\n", token.line);
+      scu_check_errors();
+    }
+
+    parser_advance(p);
+
+    instr->loop._for.range_start = arena_push_struct(ast_arena, expr_node);
+    instr->loop._for.range_start = parse_expr(p);
+
+    parser_current(p, &token);
+
+    if (token.kind != TOKEN_ELLIPSIS) {
+      scu_perror("expected '...' in for loop range [line %d]\n", token.line);
+      scu_check_errors();
+    }
+
+    parser_advance(p);
+
+    instr->loop._for.range_end = arena_push_struct(ast_arena, expr_node);
+    instr->loop._for.range_end = parse_expr(p);
+
+  } else if (kind == LOOP_WHILE) {
+    parser_current(p, &token);
+    parse_rel(p, &instr->loop.conditional.break_condition);
   }
+
+  instr->loop.variables = ht_create(sizeof(variable));
+  dynamic_array_init(&instr->loop.instrs, sizeof(instr_node));
 
   parser_current(p, &token);
   if (token.kind != TOKEN_LBRACE) {
-    scu_perror("no opening brace for %s loop at %d\n",
-               kind == LOOP_WHILE ? "while" : "dowhile", token.line);
+    const char *loop_type;
+    switch (kind) {
+    case LOOP_FOR:
+      loop_type = "for";
+      break;
+    case LOOP_WHILE:
+      loop_type = "while";
+      break;
+    case LOOP_DO_WHILE:
+      loop_type = "dowhile";
+      break;
+    default:
+      loop_type = "unconditional";
+      break;
+    }
+    scu_perror("no opening brace for %s loop at %d\n", loop_type, token.line);
   }
 
   parser_advance(p);
   parser_current(p, &token);
+
   while (token.kind != TOKEN_RBRACE) {
     instr_node *_instr = arena_push_struct(ast_arena, instr_node);
     if (parse_instr(p, _instr))
@@ -855,7 +908,7 @@ static void parse_loop(parser *p, instr_node *instr, loop_kind kind) {
 
   if (kind == LOOP_DO_WHILE) {
     parser_current(p, &token);
-    parse_rel(p, &instr->loop.break_condition);
+    parse_rel(p, &instr->loop.conditional.break_condition);
   }
 }
 
@@ -1055,6 +1108,9 @@ static bool parse_instr(parser *p, instr_node *instr) {
     return true;
   case TOKEN_DO_WHILE:
     parse_loop(p, instr, LOOP_DO_WHILE);
+    return true;
+  case TOKEN_FOR:
+    parse_loop(p, instr, LOOP_FOR);
     return true;
   case TOKEN_BREAK:
     instr->kind = INSTR_LOOP_BREAK;

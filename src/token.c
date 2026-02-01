@@ -21,6 +21,11 @@ const char *lexer_token_kind_to_str(token_kind kind) {
     return "while loop declare";
   case TOKEN_DO_WHILE:
     return "do-while loop declare";
+  case TOKEN_IN:
+    return "in";
+  case TOKEN_FOR:
+    return "for loop declare";
+
   case TOKEN_CONTINUE:
     return "continue";
   case TOKEN_BREAK:
