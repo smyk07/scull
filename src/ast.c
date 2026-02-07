@@ -178,23 +178,32 @@ static void check_rel_node_and_print(rel_node *rel) {
   }
 }
 
-static void print_cond_block(cond_block_node *block, char *label) {
+/*
+ * Counts the indentation for ast printing
+ */
+static uint32_t icount = 0;
+
+#define PRINT_INDENTATION                                                      \
+  for (uint32_t i = 0; i < icount; i++)                                        \
+    fputc('\t', stdout);
+
+static void print_cond_block(cond_block_node *block) {
   if (!block)
     return;
 
-  printf("%s:\n", label);
+  icount++;
 
   if (block->kind == COND_SINGLE_INSTR) {
-    printf("\t");
     print_instr(block->single);
   } else {
     for (unsigned int i = 0; i < block->multi.count; i++) {
       instr_node instr;
       dynamic_array_get(&block->multi, i, &instr);
-      printf("\t");
       print_instr(&instr);
     }
   }
+
+  icount--;
 }
 
 /*
@@ -203,7 +212,10 @@ static void print_cond_block(cond_block_node *block, char *label) {
  * @param instr: pointer to an instruction.
  */
 void print_instr(instr_node *instr) {
+  PRINT_INDENTATION
+
   printf("[line %zu] ", instr->line);
+
   switch (instr->kind) {
   case INSTR_DECLARE:
     printf("declare: ");
@@ -284,10 +296,14 @@ void print_instr(instr_node *instr) {
     if_node *ifn = &instr->if_;
     printf("if ");
     check_rel_node_and_print(&ifn->rel);
-    printf("\n");
-    print_cond_block(&ifn->then, "then");
-    if (ifn->else_)
-      print_cond_block(ifn->else_, "else");
+    PRINT_INDENTATION
+    printf("then:\n");
+    print_cond_block(&ifn->then);
+    if (ifn->else_) {
+      PRINT_INDENTATION
+      printf("else:\n");
+      print_cond_block(ifn->else_);
+    }
     break;
   }
 
@@ -298,11 +314,15 @@ void print_instr(instr_node *instr) {
     check_expr_and_print(match->expr);
     printf(" {\n");
 
+    icount++;
+
     for (size_t i = 0; i < match->cases.count; i++) {
       match_case_node case_node;
       dynamic_array_get(&match->cases, i, &case_node);
 
-      printf("\tcase ");
+      PRINT_INDENTATION
+
+      printf("case ");
 
       switch (case_node.kind) {
       case MATCH_CASE_VALUES: {
@@ -313,6 +333,7 @@ void print_instr(instr_node *instr) {
           if (j < case_node.values.values.count - 1)
             printf(", ");
         }
+        printf(":\n");
         break;
       }
 
@@ -320,17 +341,22 @@ void print_instr(instr_node *instr) {
         check_expr_and_print(case_node.range.start);
         printf("...");
         check_expr_and_print(case_node.range.end);
+        printf(":\n");
         break;
       }
 
       case MATCH_CASE_DEFAULT: {
-        printf("_");
+        printf("_:\n");
         break;
       }
       }
 
-      print_cond_block(&case_node.body, "");
+      print_cond_block(&case_node.body);
     }
+
+    icount--;
+
+    PRINT_INDENTATION
 
     printf("}\n");
 
@@ -370,12 +396,15 @@ void print_instr(instr_node *instr) {
       break;
     }
 
+    icount++;
+
     for (unsigned int i = 0; i < instr->loop.instrs.count; i++) {
       instr_node _instr;
       dynamic_array_get(&instr->loop.instrs, i, &_instr);
-      printf("\t");
       print_instr(&_instr);
     }
+
+    icount--;
     break;
 
   case INSTR_LOOP_BREAK:
@@ -432,12 +461,10 @@ void print_instr(instr_node *instr) {
     printf("\n");
 
     if (instr->fn_declare_node.kind == FN_DEFINED) {
-      printf("\tfunction body:\n");
       for (size_t i = 0; i < instr->fn_declare_node.defined.instrs.count; i++) {
         instr_node body_instr;
         dynamic_array_get(&instr->fn_declare_node.defined.instrs, i,
                           &body_instr);
-        printf("\t\t");
         print_instr(&body_instr);
       }
     }
@@ -483,13 +510,16 @@ void print_instr(instr_node *instr) {
       }
     }
     printf("\n");
-    printf("\tfunction body:\n");
+
+    icount++;
+
     for (size_t i = 0; i < instr->fn_define_node.defined.instrs.count; i++) {
       instr_node body_instr;
       dynamic_array_get(&instr->fn_define_node.defined.instrs, i, &body_instr);
-      printf("\t\t");
       print_instr(&body_instr);
     }
+
+    icount--;
     break;
 
   case INSTR_RETURN:

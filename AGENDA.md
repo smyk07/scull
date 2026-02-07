@@ -1,5 +1,7 @@
 # Scalable, Compiled, Unambiguous Low-Level Language (Scull)
 
+Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit-message writing guide.
+
 **Legend:**
 
 - NEC - Necessary
@@ -18,13 +20,14 @@
 - [ ] NEC Add `-O` cli option
 - [x] NEC Separate backend from frontend, clean backend interface in `src/sclc.c`
 - [x] NEC Separate stack-based and heap-based allocations
+- [ ] NEC make typedefs for ints: u32, u64, etc in utils and use uniformly
 
 ### Error Handling & Debugging
 
 - [ ] NEC Better errors
   - [ ] Fix existing bugs
   - [ ] Errors with source preview
-- [ ] NEC Tab counting in AST printer
+- [x] NEC Tab counting in AST printer
 - [x] NEC Better error handling (basic)
 - [x] NEC Parser bug fixes and proper memory management
 
@@ -47,12 +50,14 @@
   - Targets: x86_64, ARM64, RISCV64
 - [x] NEC Handle LLVM target selection in cstate
 - [x] NEC `-S` CLI flag and `--emit-llvm` flag, general CLI improvements
+- [ ] NEC Move linking to llvm backend, since linking is only needed there (For now)
 
 ### Alternative Backends
 
 - [ ] NEC Develop C Backend
   - Language changes for 1:1 C translation needed
   - Basic types, structs, unions, enums, memory management, etc.
+- [ ] EXP Optional cosmopolitan backend for generating fat binaries
 
 ### Distribution
 
@@ -73,6 +78,7 @@
 - [ ] NEC Unsigned ints (`u32`) and signed ints (`i32`)
 - [ ] NEC Boolean type
 - [ ] NEC Typedefs
+- [ ] NEC Better way to declare variables: `let x: u32 = 3`
 - [ ] ? Type casting
 - [ ] ? Type inference
 
@@ -113,6 +119,10 @@
 - [ ] NEC Enums
 - [ ] NEC Implementation blocks for user-defined data types
 - [ ] EXP Traits / Interfaces
+
+### Functions
+
+- [ ] EXP Anonymous functions
 
 ### Metaprogramming
 
@@ -167,6 +177,8 @@
 - [ ] EXP Distinct typedefs (cannot be cast to other typedefs wrapping the same types)
 
 - [ ] EXP Packed structs without padding (runtime overhead)
+
+- [ ] EXP Sum types (like rust enums)
 
 ### Error Handling
 
