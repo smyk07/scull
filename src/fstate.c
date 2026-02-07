@@ -2,7 +2,6 @@
 #include "ast.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
-#include "lexer.h"
 #include "utils.h"
 #include "var.h"
 

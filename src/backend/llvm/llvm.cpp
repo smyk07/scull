@@ -1,6 +1,7 @@
 #include "backend/llvm/llvm.h"
 #include "backend/llvm/ld_utils.hpp"
 #include "backend/llvm/llvm_irgen.hpp"
+#include <stddef.h>
 
 extern "C" {
 #include "ast.h"
@@ -183,7 +184,13 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
     return;
   }
 
-  std::string obj_filename = std::string(fst->extracted_filepath) + ".o";
+  std::string obj_filename;
+
+  if (cst->options.compile_only)
+    obj_filename = std::string(fst->extracted_filepath) + ".o";
+  else
+    obj_filename = "/tmp/" + std::string(fst->extracted_filepath) + ".o";
+
   llvm::raw_fd_ostream dest(obj_filename, ec, llvm::sys::fs::OF_None);
 
   if (ec) {
@@ -222,10 +229,10 @@ void llvm_backend_cleanup(cstate *, fstate *) {
 void llvm_backend_link(cstate *cst) {
   std::vector<const char *> obj_files;
 
-  char *tok = std::strtok(cst->obj_file_list, " ");
-  while (tok) {
-    obj_files.push_back(tok);
-    tok = std::strtok(nullptr, " ");
+  for (size_t i = 0; i < cst->obj_file_list.count; i++) {
+    char *obj;
+    dynamic_array_get(&cst->obj_file_list, i, &obj);
+    obj_files.push_back(obj);
   }
 
   ld_link(cst->output_filepath, obj_files);

@@ -8,6 +8,7 @@
 #include <llvm-c/Core.h>
 #include <llvm-c/TargetMachine.h>
 
+#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,6 +65,7 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
   dynamic_array filenames;
   dynamic_array_init(&filenames, sizeof(char *));
 
+  dynamic_array_init(&cst->obj_file_list, sizeof(char *));
   cst->output_filepath = NULL;
   cst->include_dir = NULL;
   cst->llvm_target_triple = LLVMGetDefaultTargetTriple();
@@ -263,28 +265,24 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
 
     fstate *fst = arena_push_struct(&cst->file_arena, fstate);
     fstate_init(fst, filepath);
-
     dynamic_array_append(&cst->files, &fst);
+
+    size_t len;
+    char *obj;
+
+    if (cst->options.compile_only) {
+      len = strlen(fst->extracted_filepath) + 3;
+      obj = scu_checked_malloc(len);
+      snprintf(obj, len, "%s.o", fst->extracted_filepath);
+    } else {
+      len = strlen(fst->extracted_filepath) + 8;
+      obj = scu_checked_malloc(len);
+      snprintf(obj, len, "/tmp/%s.o", fst->extracted_filepath);
+    }
+
+    dynamic_array_append(&cst->obj_file_list, &obj);
+
     free(filepath);
-  }
-
-  size_t total_len = 0;
-  for (size_t i = 0; i < cst->files.count; i++) {
-    fstate *fst;
-    dynamic_array_get(&cst->files, i, &fst);
-    total_len += strlen(fst->extracted_filepath) + 3;
-  }
-
-  cst->obj_file_list = scu_checked_malloc(total_len + 1);
-  cst->obj_file_list[0] = '\0';
-
-  for (size_t i = 0; i < cst->files.count; i++) {
-    fstate *fst;
-    dynamic_array_get(&cst->files, i, &fst);
-    if (i > 0)
-      strcat(cst->obj_file_list, " ");
-    strcat(cst->obj_file_list, fst->extracted_filepath);
-    strcat(cst->obj_file_list, ".o");
   }
 
   dynamic_array_free(&filenames);
@@ -310,7 +308,7 @@ void cstate_free(cstate *cst) {
     arena_free(&cst->file_arena);
   }
 
-  free(cst->obj_file_list);
+  dynamic_array_free(&cst->obj_file_list);
 
   dynamic_array_free(&cst->files);
 }

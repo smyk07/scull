@@ -91,7 +91,7 @@ typedef struct cstate {
   /*
    * all the '.o' object files seperated with spaces
    */
-  char *obj_file_list;
+  dynamic_array obj_file_list;
 
   /*
    * Path to the output file. default is extracted from the first filepath.
