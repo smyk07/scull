@@ -137,9 +137,12 @@ EXAMPLE_BINARIES = $(EXAMPLE_SRCS:.scl=)
 examples: sclc $(EXAMPLE_BINARIES)
 	@echo -e "$(GREEN)[INFO]$(NC) Examples Compiled Successfully"
 
-$(EXAMPLES_DIR)/%: $(EXAMPLES_DIR)/%.scl $(TARGET)
+$(EXAMPLES_DIR)/%: $(EXAMPLES_DIR)/%.scl $(TARGET) tmp_examples_dir
 	@$(SCLC) $(SCLC_FLAGS) $<
 	@echo -e "$(GREEN)[SCLC]$(NC) $<"
+
+tmp_examples_dir:
+	@mkdir -p /tmp/examples
 
 clean-examples:
 	@find ./examples -type f ! -name "*.scl" -delete
