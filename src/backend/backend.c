@@ -8,6 +8,7 @@ void backend_init(backend *backend) {
   backend->compile_function = llvm_backend_compile;
   backend->emit_output_function = llvm_backend_emit;
   backend->cleanup_function = llvm_backend_cleanup;
+  backend->link_function = llvm_backend_link;
 }
 
 void backend_compile(backend *backend, cstate *cst, fstate *fst) {

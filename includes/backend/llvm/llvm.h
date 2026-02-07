@@ -45,6 +45,13 @@ void llvm_backend_emit(cstate *cst, fstate *fst);
  */
 void llvm_backend_cleanup(cstate *cst, fstate *fst);
 
+/*
+ * @brief: Links the emitted object files
+ *
+ * @param cst: Pointer to compiler state containing global compilation context
+ */
+void llvm_backend_link(cstate *cst);
+
 #ifdef __cplusplus
 }
 #endif

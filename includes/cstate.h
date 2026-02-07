@@ -33,6 +33,11 @@ typedef struct coptions {
   bool output;
 
   /*
+   * Output object file only (compile but don't link)
+   */
+  bool compile_only;
+
+  /*
    * Weather an include directory was specified in the command.
    */
   bool include_dir_specified;

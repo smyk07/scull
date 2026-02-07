@@ -121,6 +121,12 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
       continue;
     }
 
+    if (strcmp(arg, "-c") == 0) {
+      cst->options.compile_only = true;
+      i++;
+      continue;
+    }
+
     if (strcmp(arg, "--include_dir") == 0 || strcmp(arg, "-i") == 0) {
       if (i + 1 >= argc) {
         scu_perror("Missing directory path after %s\n", arg);

@@ -1,5 +1,6 @@
+#include "backend/llvm/ld_utils.hpp"
+
 extern "C" {
-#include "backend/llvm/ld_utils.h"
 #include "utils.h"
 }
 
@@ -7,8 +8,8 @@ extern "C" {
 
 LLD_HAS_DRIVER(elf)
 
-extern "C" {
-void ld_link(const char *output_file, const char *obj_file) {
+void ld_link(const char *output_file,
+             const std::vector<const char *> &obj_files) {
   std::vector<const char *> args;
 
   args.push_back("ld.lld");
@@ -21,7 +22,10 @@ void ld_link(const char *output_file, const char *obj_file) {
 
   args.push_back("/usr/lib/crt1.o");
   args.push_back("/usr/lib/crti.o");
-  args.push_back(obj_file);
+
+  for (const char *obj : obj_files) {
+    args.push_back(obj);
+  }
 
   args.push_back("--start-group");
   args.push_back("-lc");
@@ -31,13 +35,11 @@ void ld_link(const char *output_file, const char *obj_file) {
 
   args.push_back("/usr/lib/crtn.o");
 
-  lld::Result result =
-      lld::lldMain(llvm::ArrayRef<const char *>(args), llvm::outs(),
-                   llvm::errs(), {{lld::Gnu, &lld::elf::link}});
+  auto result = lld::lldMain(llvm::ArrayRef<const char *>(args), llvm::outs(),
+                             llvm::errs(), {{lld::Gnu, &lld::elf::link}});
 
   if (result.retCode != 0) {
-    scu_perror(const_cast<char *>("Linking failed\n"));
+    scu_perror((char *)"Linking failed\n");
     exit(1);
   }
-}
 }

@@ -16,7 +16,7 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 
 - [ ] NEC Move to CMake for better dependency handling
 - [ ] NEC Better arena implementation with chaining
-- [ ] NEC Only emit output file in current directory unless specified with `-c`, else use `/tmp`
+- [x] NEC Only emit output file in current directory unless specified with `-c`, else use `/tmp`
 - [ ] NEC Add `-O` cli option
 - [x] NEC Separate backend from frontend, clean backend interface in `src/sclc.c`
 - [x] NEC Separate stack-based and heap-based allocations

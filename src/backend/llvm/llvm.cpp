@@ -1,8 +1,9 @@
+#include "backend/llvm/llvm.h"
+#include "backend/llvm/ld_utils.hpp"
 #include "backend/llvm/llvm_irgen.hpp"
 
 extern "C" {
 #include "ast.h"
-#include "backend/llvm/ld_utils.h"
 #include "backend/llvm/llvm.h"
 #include "cstate.h"
 #include "ds/dynamic_array.h"
@@ -153,9 +154,6 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
 
   pass.run(*bctx.module);
   dest.flush();
-
-  if (!(cst->options.target_specified))
-    ld_link(cst->output_filepath, cst->obj_file_list);
 }
 
 void llvm_backend_cleanup(cstate *, fstate *) {
@@ -171,5 +169,17 @@ void llvm_backend_cleanup(cstate *, fstate *) {
   bctx.module = nullptr;
   bctx.context = nullptr;
   bctx.target_machine = nullptr;
+}
+
+void llvm_backend_link(cstate *cst) {
+  std::vector<const char *> obj_files;
+
+  char *tok = std::strtok(cst->obj_file_list, " ");
+  while (tok) {
+    obj_files.push_back(tok);
+    tok = std::strtok(nullptr, " ");
+  }
+
+  ld_link(cst->output_filepath, obj_files);
 }
 }

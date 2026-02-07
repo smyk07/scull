@@ -85,6 +85,9 @@ int main(int argc, char *argv[]) {
       scu_psuccess("COMPILED %s\n", fst->filepath);
   }
 
+  if (!(cst.options.target_specified) && !(cst.options.compile_only))
+    backend.link_function(&cst);
+
   backend_free(&backend);
 
   if (cst.options.emit_llvm || cst.options.emit_asm) {
