@@ -28,6 +28,8 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
     printf("--target [TARGET]                     Specify LLVM supported "
            "output target triple\n");
 
+    printf("-c                                    Compile but do not link\n");
+
     printf("--output <output_filename>    OR  -o  Specify output binary "
            "filename.\n");
 
