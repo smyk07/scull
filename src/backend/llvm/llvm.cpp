@@ -15,8 +15,10 @@ extern "C" {
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/LegacyPassManager.h>
 #include <llvm/IR/Module.h>
+#include <llvm/IR/PassManager.h>
 #include <llvm/IR/Verifier.h>
 #include <llvm/MC/TargetRegistry.h>
+#include <llvm/Passes/PassBuilder.h>
 #include <llvm/Support/FileSystem.h>
 #include <llvm/Support/TargetSelect.h>
 #include <llvm/Target/TargetMachine.h>
@@ -49,7 +51,29 @@ void llvm_backend_init(cstate *cst, fstate *fst) {
 
   bctx.module->setTargetTriple(llvm::Triple(bctx.target_triple));
 
-  bctx.target_machine = nullptr;
+  std::string error;
+  const llvm::Target *target =
+      llvm::TargetRegistry::lookupTarget(bctx.target_triple, error);
+
+  if (!target) {
+    scu_perror(const_cast<char *>("Failed to look up target: %s\n"),
+               error.c_str());
+    return;
+  }
+
+  llvm::TargetOptions opt;
+  llvm::Reloc::Model RM = llvm::Reloc::PIC_;
+
+  bctx.target_machine =
+      target->createTargetMachine(llvm::Triple(bctx.target_triple), "generic",
+                                  "", opt, RM, llvm::CodeModel::Small);
+
+  if (!bctx.target_machine) {
+    scu_perror(const_cast<char *>("Failed to create target machine\n"));
+    return;
+  }
+
+  bctx.module->setDataLayout(bctx.target_machine->createDataLayout());
 }
 
 void llvm_backend_compile(cstate *, fstate *fst) {
@@ -60,6 +84,54 @@ void llvm_backend_compile(cstate *, fstate *fst) {
     llvm_irgen_instr(bctx, &instr);
   }
   llvm_irgen_clear_symbol_table();
+}
+
+void llvm_backend_optimize(cstate *cst, fstate *) {
+  using namespace llvm;
+
+  OptimizationLevel opt_level;
+
+  switch (cst->options.opt_level) {
+  case OPT_O0:
+    opt_level = OptimizationLevel::O0;
+    break;
+  case OPT_O1:
+    opt_level = OptimizationLevel::O1;
+    break;
+  case OPT_O2:
+    opt_level = OptimizationLevel::O2;
+    break;
+  case OPT_O3:
+    opt_level = OptimizationLevel::O3;
+    break;
+  case OPT_Os:
+    opt_level = OptimizationLevel::Os;
+    break;
+  case OPT_Oz:
+    opt_level = OptimizationLevel::Oz;
+    break;
+  }
+
+  if (opt_level == OptimizationLevel::O0)
+    return;
+
+  LoopAnalysisManager LAM;
+  FunctionAnalysisManager FAM;
+  CGSCCAnalysisManager CGAM;
+  ModuleAnalysisManager MAM;
+
+  PassBuilder PB;
+
+  PB.registerModuleAnalyses(MAM);
+  PB.registerCGSCCAnalyses(CGAM);
+  PB.registerFunctionAnalyses(FAM);
+  PB.registerLoopAnalyses(LAM);
+
+  PB.crossRegisterProxies(LAM, FAM, CGAM, MAM);
+
+  ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(opt_level);
+
+  MPM.run(*bctx.module, MAM);
 }
 
 void llvm_backend_emit(cstate *cst, fstate *fst) {
@@ -88,30 +160,6 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
 
     return;
   }
-
-  std::string error;
-  const llvm::Target *target =
-      llvm::TargetRegistry::lookupTarget(bctx.target_triple, error);
-
-  if (!target) {
-    scu_perror(const_cast<char *>("Failed to look up target: %s\n"),
-               error.c_str());
-    return;
-  }
-
-  llvm::TargetOptions opt;
-  llvm::Reloc::Model RM = llvm::Reloc::PIC_;
-
-  bctx.target_machine =
-      target->createTargetMachine(llvm::Triple(bctx.target_triple), "generic",
-                                  "", opt, RM, llvm::CodeModel::Small);
-
-  if (!bctx.target_machine) {
-    scu_perror(const_cast<char *>("Failed to create target machine\n"));
-    return;
-  }
-
-  bctx.module->setDataLayout(bctx.target_machine->createDataLayout());
 
   if (cst->options.emit_asm) {
     std::string asm_filename = std::string(fst->extracted_filepath) + ".s";

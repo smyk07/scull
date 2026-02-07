@@ -29,6 +29,14 @@ void llvm_backend_init(cstate *cst, fstate *fst);
 void llvm_backend_compile(cstate *cst, fstate *fst);
 
 /*
+ * @brief: LLVM Optimization passes.
+ *
+ * @param cst: Pointer to compiler state containing global compilation context
+ * @param fst: Pointer to file state containing the compiled IR
+ */
+void llvm_backend_optimize(cstate *cst, fstate *fst);
+
+/*
  * @brief: Emits the compiled LLVM IR to the requested format (default is a
  * linkable output file).
  *

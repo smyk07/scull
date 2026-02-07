@@ -44,6 +44,8 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
     printf("--emit-asm                            Emit target assembly along "
            "with object file.\n");
 
+    printf("-O0, -O1, -O2, -O3, -Os, -Oz          Optimization levels\n");
+
     printf("\n");
 
     /*
@@ -65,6 +67,7 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
   cst->output_filepath = NULL;
   cst->include_dir = NULL;
   cst->llvm_target_triple = LLVMGetDefaultTargetTriple();
+  cst->options.opt_level = OPT_O2;
 
   while (i < argc) {
     char *arg = argv[i];
@@ -171,12 +174,14 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
 
     if (strcmp(arg, "--emit-llvm") == 0) {
       cst->options.emit_llvm = true;
+      cst->options.compile_only = true;
       i++;
       continue;
     }
 
     if (strcmp(arg, "--emit-asm") == 0) {
       cst->options.emit_asm = true;
+      cst->options.compile_only = true;
       i++;
       continue;
     }
@@ -184,6 +189,42 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
     if (arg[0] != '-') {
       char *filename_copy = strdup(arg);
       dynamic_array_append(&filenames, &filename_copy);
+      i++;
+      continue;
+    }
+
+    if (strcmp(arg, "-O0") == 0) {
+      cst->options.opt_level = OPT_O0;
+      i++;
+      continue;
+    }
+
+    if (strcmp(arg, "-O1") == 0) {
+      cst->options.opt_level = OPT_O1;
+      i++;
+      continue;
+    }
+
+    if (strcmp(arg, "-O2") == 0) {
+      cst->options.opt_level = OPT_O2;
+      i++;
+      continue;
+    }
+
+    if (strcmp(arg, "-O3") == 0) {
+      cst->options.opt_level = OPT_O3;
+      i++;
+      continue;
+    }
+
+    if (strcmp(arg, "-Os") == 0) {
+      cst->options.opt_level = OPT_Os;
+      i++;
+      continue;
+    }
+
+    if (strcmp(arg, "-Oz") == 0) {
+      cst->options.opt_level = OPT_Oz;
       i++;
       continue;
     }

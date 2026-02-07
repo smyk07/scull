@@ -18,6 +18,7 @@ typedef struct backend {
   void (*init_function)(cstate *cst, fstate *fst);
   void (*compile_function)(cstate *cst, fstate *fst);
   void (*emit_output_function)(cstate *cst, fstate *fst);
+  void (*optimize_function)(cstate *cst, fstate *fst);
   void (*cleanup_function)(cstate *cst, fstate *fst);
   void (*link_function)(cstate *cst);
 } backend;

@@ -18,6 +18,18 @@
 #include <stddef.h>
 
 /*
+ * @enum opt_level: represents optimization levels
+ */
+typedef enum opt_level {
+  OPT_O0 = 0, // no optimization
+  OPT_O1,     // basic
+  OPT_O2,     // default
+  OPT_O3,     // aggressive
+  OPT_Os,     // optimize for size
+  OPT_Oz      // optimize for minimum size
+} opt_level;
+
+/*
  * @struct coptions: represents the options described in the command when the
  * binary is executed.
  */
@@ -53,6 +65,8 @@ typedef struct coptions {
    * Emit target assembly
    */
   bool emit_asm;
+
+  opt_level opt_level;
 } coptions;
 
 /*
