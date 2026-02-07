@@ -79,12 +79,12 @@ REL_DEPS     = $(REL_C_DEPS) $(REL_CXX_DEPS)
 
 REL_TARGET = $(REL_BIN_DIR)/sclc
 
-sclc-release: $(REL_TARGET)
-	@echo -e "$(GREEN)[INFO]$(NC) Release Build Successful"
-
 install: sclc-release
 	@echo -e "$(GREEN)[INSTALL]$(NC) $(REL_TARGET) -> /usr/local/bin/sclc"
 	@sudo cp $(REL_TARGET) /usr/local/bin/sclc
+
+sclc-release: $(REL_TARGET)
+	@echo -e "$(GREEN)[INFO]$(NC) Release Build Successful"
 
 $(REL_TARGET): $(REL_OBJS) | $(REL_BIN_DIR)
 	@$(CXX) $(REL_OBJS) -o $@ $(LLVM_LDFLAGS) -lm
