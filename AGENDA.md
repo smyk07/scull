@@ -20,7 +20,7 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 - [ ] NEC Add `-O` cli option
 - [x] NEC Separate backend from frontend, clean backend interface in `src/sclc.c`
 - [x] NEC Separate stack-based and heap-based allocations
-- [ ] NEC make typedefs for ints: u32, u64, etc in utils and use uniformly
+- [ ] NEC make typedefs for ints: u32, u64, etc in utils and use uniformly across codebase
 
 ### Error Handling & Debugging
 
