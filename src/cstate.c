@@ -219,6 +219,25 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
     free(filepath);
   }
 
+  size_t total_len = 0;
+  for (size_t i = 0; i < cst->files.count; i++) {
+    fstate *fst;
+    dynamic_array_get(&cst->files, i, &fst);
+    total_len += strlen(fst->extracted_filepath) + 3;
+  }
+
+  cst->obj_file_list = scu_checked_malloc(total_len + 1);
+  cst->obj_file_list[0] = '\0';
+
+  for (size_t i = 0; i < cst->files.count; i++) {
+    fstate *fst;
+    dynamic_array_get(&cst->files, i, &fst);
+    if (i > 0)
+      strcat(cst->obj_file_list, " ");
+    strcat(cst->obj_file_list, fst->extracted_filepath);
+    strcat(cst->obj_file_list, ".o");
+  }
+
   dynamic_array_free(&filenames);
 }
 
@@ -241,6 +260,8 @@ void cstate_free(cstate *cst) {
     fstate_free(fst);
     arena_free(&cst->file_arena);
   }
+
+  free(cst->obj_file_list);
 
   dynamic_array_free(&cst->files);
 }

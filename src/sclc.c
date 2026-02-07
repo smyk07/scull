@@ -19,7 +19,6 @@
  */
 
 #include "backend/backend.h"
-#include "backend/ld_utils.h"
 #include "cstate.h"
 #include "ds/dynamic_array.h"
 #include "fstate.h"
@@ -92,30 +91,6 @@ int main(int argc, char *argv[]) {
     cstate_free(&cst);
     return 0;
   }
-
-  size_t total_len = 0;
-  for (size_t i = 0; i < cst.files.count; i++) {
-    fstate *fst;
-    dynamic_array_get(&cst.files, i, &fst);
-    total_len += strlen(fst->extracted_filepath) + 3;
-  }
-
-  char *obj_file_list = scu_checked_malloc(total_len + 1);
-  obj_file_list[0] = '\0';
-
-  for (size_t i = 0; i < cst.files.count; i++) {
-    fstate *fst;
-    dynamic_array_get(&cst.files, i, &fst);
-    if (i > 0)
-      strcat(obj_file_list, " ");
-    strcat(obj_file_list, fst->extracted_filepath);
-    strcat(obj_file_list, ".o");
-  }
-
-  if (!(cst.options.target_specified))
-    ld_link(cst.output_filepath, obj_file_list);
-
-  free(obj_file_list);
 
   end = clock();
   time_taken = (double)(end - start) / CLOCKS_PER_SEC;

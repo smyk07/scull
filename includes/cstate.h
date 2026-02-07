@@ -70,6 +70,11 @@ typedef struct cstate {
   char *include_dir;
 
   /*
+   * all the '.o' object files seperated with spaces
+   */
+  char *obj_file_list;
+
+  /*
    * Path to the output file. default is extracted from the first filepath.
    * Ex: main.sclc => main
    */

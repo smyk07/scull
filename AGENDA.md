@@ -50,7 +50,7 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
   - Targets: x86_64, ARM64, RISCV64
 - [x] NEC Handle LLVM target selection in cstate
 - [x] NEC `-S` CLI flag and `--emit-llvm` flag, general CLI improvements
-- [ ] NEC Move linking to llvm backend, since linking is only needed there (For now)
+- [x] NEC Move linking to llvm backend, since linking is only needed there (For now)
 
 ### Alternative Backends
 
