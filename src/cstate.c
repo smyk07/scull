@@ -275,9 +275,9 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
       obj = scu_checked_malloc(len);
       snprintf(obj, len, "%s.o", fst->extracted_filepath);
     } else {
-      len = strlen(fst->extracted_filepath) + 8;
+      len = strlen(fst->extracted_filepath) + 13;
       obj = scu_checked_malloc(len);
-      snprintf(obj, len, "/tmp/%s.o", fst->extracted_filepath);
+      snprintf(obj, len, "/tmp/sclc/%s.o", fst->extracted_filepath);
     }
 
     dynamic_array_append(&cst->obj_file_list, &obj);

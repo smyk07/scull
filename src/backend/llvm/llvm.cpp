@@ -1,6 +1,7 @@
 #include "backend/llvm/llvm.h"
 #include "backend/llvm/ld_utils.hpp"
 #include "backend/llvm/llvm_irgen.hpp"
+#include <filesystem>
 #include <stddef.h>
 
 extern "C" {
@@ -188,8 +189,24 @@ void llvm_backend_emit(cstate *cst, fstate *fst) {
 
   if (cst->options.compile_only)
     obj_filename = std::string(fst->extracted_filepath) + ".o";
-  else
-    obj_filename = "/tmp/" + std::string(fst->extracted_filepath) + ".o";
+  else {
+    obj_filename = "/tmp/sclc/" + std::string(fst->extracted_filepath) + ".o";
+
+    std::filesystem::path obj_path(obj_filename);
+    std::filesystem::path parent_dir = obj_path.parent_path();
+
+    if (!parent_dir.empty()) {
+      std::error_code mkdir_ec;
+      std::filesystem::create_directories(parent_dir, mkdir_ec);
+
+      if (mkdir_ec) {
+        scu_perror(
+            const_cast<char *>("Could not create temporary directory: %s\n"),
+            mkdir_ec.message().c_str());
+        return;
+      }
+    }
+  }
 
   llvm::raw_fd_ostream dest(obj_filename, ec, llvm::sys::fs::OF_None);
 
