@@ -75,11 +75,11 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
     char *arg = argv[i];
 
     if (strcmp(arg, "--target") == 0) {
-      LLVMInitializeAllTargetInfos();
-      LLVMInitializeAllTargets();
-      LLVMInitializeAllTargetMCs();
-      LLVMInitializeAllAsmParsers();
-      LLVMInitializeAllAsmPrinters();
+      LLVMInitializeX86TargetInfo();
+      LLVMInitializeX86Target();
+      LLVMInitializeX86TargetMC();
+      LLVMInitializeX86AsmParser();
+      LLVMInitializeX86AsmPrinter();
 
       if (i + 1 >= argc) {
         scu_perror("Missing target after %s\n", arg);

@@ -21,8 +21,11 @@ Compile and run:
 $ git clone https://github.com/smyk07/scull.git
 $ cd scull
 
-# build (llvm, clang, and lld need to be installed before this step)
-$ make -j4
+# sync submodules and build llvm
+$ make llvm-sync llvm
+
+# build sclc
+$ make
 
 # compile the program
 $ ./bin/sclc -i ./lib hello.scl
@@ -45,7 +48,6 @@ More examples in `./examples`.
 
 ## Prerequisites for building
 
-- [`llvm`](https://llvm.org/)
 - [`make`](https://www.gnu.org/software/make)
 - [`clang`](https://clang.llvm.org)
 - [`bear`](https://github.com/rizsotto/Bear) (for `compile_commands.json`)

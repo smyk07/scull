@@ -1,44 +1,49 @@
 #include "backend/llvm/ld_utils.hpp"
+#include <cstdio>
+#include <cstdlib>
 
 extern "C" {
 #include "utils.h"
 }
 
-#include <lld/Common/Driver.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
-LLD_HAS_DRIVER(elf)
+#include <vector>
 
 void ld_link(const char *output_file,
              const std::vector<const char *> &obj_files) {
   std::vector<const char *> args;
 
-  args.push_back("ld.lld");
-  args.push_back("-static");
+  args.push_back("clang");
+  args.push_back("-fuse-ld=lld");
+
   args.push_back("-o");
   args.push_back(output_file);
-
-  args.push_back("-L/usr/lib");
-  args.push_back("-L/usr/lib/gcc/x86_64-pc-linux-gnu/15.2.1");
-
-  args.push_back("/usr/lib/crt1.o");
-  args.push_back("/usr/lib/crti.o");
 
   for (const char *obj : obj_files) {
     args.push_back(obj);
   }
 
-  args.push_back("--start-group");
-  args.push_back("-lc");
-  args.push_back("-lgcc");
-  args.push_back("-lgcc_eh");
-  args.push_back("--end-group");
+  args.push_back(nullptr);
 
-  args.push_back("/usr/lib/crtn.o");
+  pid_t pid = fork();
+  if (pid < 0) {
+    scu_perror((char *)"fork failed\n");
+    exit(1);
+  }
 
-  auto result = lld::lldMain(llvm::ArrayRef<const char *>(args), llvm::outs(),
-                             llvm::errs(), {{lld::Gnu, &lld::elf::link}});
+  if (pid == 0) {
+    execvp("clang", const_cast<char *const *>(args.data()));
+    perror("execvp clang");
+    _exit(1);
+  }
 
-  if (result.retCode != 0) {
+  int status = 0;
+  waitpid(pid, &status, 0);
+
+  if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
     scu_perror((char *)"Linking failed\n");
     exit(1);
   }

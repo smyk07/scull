@@ -36,11 +36,9 @@ static llvm_backend_ctx bctx;
 
 extern "C" {
 void llvm_backend_init(cstate *cst, fstate *fst) {
-  llvm::InitializeAllTargetInfos();
-  llvm::InitializeAllTargets();
-  llvm::InitializeAllTargetMCs();
-  llvm::InitializeAllAsmParsers();
-  llvm::InitializeAllAsmPrinters();
+  llvm::InitializeNativeTarget();
+  llvm::InitializeNativeTargetAsmParser();
+  llvm::InitializeNativeTargetAsmPrinter();
 
   bctx.context = new llvm::LLVMContext();
 

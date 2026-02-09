@@ -9,6 +9,75 @@ NC = \033[0m
 # The SCULL Compiler #
 ######################
 
+
+# --- LLVM --- #
+
+LLVM_DIR   := external/llvm-project
+LLVM_BUILD := $(LLVM_DIR)/build
+LLVM_LIB   := $(LLVM_BUILD)/lib
+LLVM_INC   := $(LLVM_BUILD)/include
+
+LLVM_SENTINEL := $(LLVM_LIB)/libLLVM.so
+
+llvm-sync:
+	@git submodule sync --recursive
+	@git submodule update --init --recursive --depth 1
+	@echo -e "$(GREEN)[LLVM]$(NC) Submodule synced"
+
+JOBS ?= $(shell nproc)
+
+llvm:
+	cd $(LLVM_DIR) && \
+	mkdir -p build && cd build && \
+	cmake -S ../llvm -B . \
+	  -G Ninja \
+	  -DCMAKE_BUILD_TYPE=Release \
+	  -DLLVM_TARGETS_TO_BUILD="X86" \
+	  -DLLVM_ENABLE_RTTI=ON \
+	  -DLLVM_ENABLE_EH=ON \
+	  -DLLVM_ENABLE_TERMINFO=OFF \
+	  -DLLVM_ENABLE_ZLIB=OFF \
+	  -DLLVM_ENABLE_ZSTD=OFF \
+	  -DLLVM_ENABLE_LIBXML2=OFF \
+	  -DLLVM_INCLUDE_TESTS=OFF \
+	  -DLLVM_INCLUDE_EXAMPLES=OFF \
+	  -DLLVM_INCLUDE_BENCHMARKS=OFF \
+	  -DLLVM_BUILD_LLVM_DYLIB=ON \
+		-DLLVM_LINK_LLVM_DYLIB=ON \
+	  -DBUILD_SHARED_LIBS=OFF && \
+	ninja -j $(JOBS)
+	@echo -e "$(GREEN)[LLVM]$(NC) LLVM built"
+
+ifeq ($(wildcard $(LLVM_SENTINEL)),)
+LLVM_AVAILABLE := 0
+else
+LLVM_AVAILABLE := 1
+endif
+
+check-llvm:
+ifeq ($(LLVM_AVAILABLE),0)
+	$(error LLVM not built. Run: make llvm-sync llvm)
+endif
+
+ifeq ($(LLVM_AVAILABLE),1)
+
+LLVM_CONFIG := $(LLVM_BUILD)/bin/llvm-config
+
+LLVM_CXXFLAGS := \
+	-isystem $(LLVM_INC) \
+	$(shell $(LLVM_CONFIG) --cxxflags) \
+	-Wno-unused-parameter
+
+LLVM_LDFLAGS := \
+	-L$(LLVM_LIB) \
+	-Wl,-rpath,'$$ORIGIN/../external/llvm-project/build/lib' \
+	-lLLVM \
+	$(shell $(LLVM_CONFIG) --system-libs)
+
+endif
+
+# --- Source and Destination directories --- #
+
 INC_DIR = ./sclc/include
 SRC_DIR = ./sclc/src
 OBJ_DIR = ./obj
@@ -21,9 +90,6 @@ CXX = clang++
 
 CFLAGS = -std=c23 -g -O0 -Wall -Wextra -I$(INC_DIR)
 CXXFLAGS = -std=c++17 -g -O0 -Wall -Wextra -I$(INC_DIR)
-
-LLVM_CXXFLAGS = $(shell llvm-config --cxxflags)
-LLVM_LDFLAGS = $(shell llvm-config --ldflags --libs all --system-libs) -llldELF -llldCommon
 
 C_SRCS = $(shell find $(SRC_DIR) -name "*.c" -type f)
 CXX_SRCS = $(shell find $(SRC_DIR) -name "*.cpp" -type f)
@@ -38,7 +104,7 @@ DEPS = $(C_DEPS) $(CXX_DEPS)
 
 TARGET = $(BIN_DIR)/sclc
 
-sclc: $(TARGET)
+sclc: check-llvm $(TARGET)
 	@echo -e "$(GREEN)[INFO]$(NC) Development Build Successful"
 
 $(TARGET): $(OBJS) | $(BIN_DIR)
@@ -154,4 +220,4 @@ clean-all: clean-sclc clean-examples clean-compile_commands.json
 
 .DEFAULT_GOAL := sclc
 
-.PHONY: all sclc sclc-release clean-sclc clean-all compile_commands.json clean-compile_commands.json install examples clean-examples
+.PHONY: llvm-sync llvm check-llvm sclc sclc-release clean-sclc clean-all compile_commands.json clean-compile_commands.json install examples clean-examples
