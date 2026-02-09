@@ -1,0 +1,45 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: archlinux:latest
+      options: --user root
+
+    env:
+      GIT_DISCOVERY_ACROSS_FILESYSTEM: 1
+
+    steps:
+      - name: Install git early (required for checkout)
+        run: |
+          pacman -Sy --noconfirm git
+
+      - name: Checkout repository (with submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Install build dependencies
+        run: |
+          pacman -Syu --noconfirm
+          pacman -S --noconfirm \
+            clang \
+            lld \
+            cmake \
+            ninja \
+            base-devel \
+            python
+
+      - name: Build vendored LLVM
+        run: make llvm
+
+      - name: Build sclc
+        run: make

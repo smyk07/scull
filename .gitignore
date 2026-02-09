@@ -21,3 +21,6 @@
 !/external/**
 
 !.gitignore
+
+!.github/
+!.github/**
