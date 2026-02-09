@@ -2,3 +2,4 @@
 	path = external/llvm-project
 	url = https://github.com/scull-lang/llvm-project
 	branch = release/21.x
+	shallow = true
