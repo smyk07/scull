@@ -17,4 +17,7 @@
 !LICENSE
 !AGENDA.md
 
+!/external/
+!/external/**
+
 !.gitignore
