@@ -9,8 +9,8 @@ NC = \033[0m
 # The SCULL Compiler #
 ######################
 
-INC_DIR = ./includes
-SRC_DIR = ./src
+INC_DIR = ./sclc/include
+SRC_DIR = ./sclc/src
 OBJ_DIR = ./obj
 BIN_DIR = ./bin
 

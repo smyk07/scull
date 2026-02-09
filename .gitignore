@@ -1,17 +1,15 @@
 *
 
-!/includes/
-!/includes/**
-!/src/
-!/src/**
+!/sclc/
+!/sclc/**
+
 !/lib/
 !/lib/**
-!/tests/
-!/tests/**
+
 !/examples/
+
 !/logo/
 !/logo/**
-!*.scl
 
 !Makefile
 !.clang-format
