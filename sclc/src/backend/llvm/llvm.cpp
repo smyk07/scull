@@ -34,14 +34,14 @@ typedef struct llvm_backend_ctx llvm_backend_ctx;
 static llvm_backend_ctx bctx;
 
 extern "C" {
-void llvm_backend_init(cstate *cst, fstate *fst) {
+void llvm_backend_init(cstate *cst) {
   llvm::InitializeNativeTarget();
   llvm::InitializeNativeTargetAsmParser();
   llvm::InitializeNativeTargetAsmPrinter();
 
   bctx.context = new llvm::LLVMContext();
 
-  std::string module_name = fst->extracted_filepath;
+  std::string module_name = cst->output_filepath;
   bctx.module = new llvm::Module(module_name, *bctx.context);
 
   bctx.builder = new llvm::IRBuilder<>(*bctx.context);

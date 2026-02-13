@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
   cstate_init(&cst, (u32)argc, argv);
 
   backend backend;
-  backend_init(&backend);
+  backend_init(&backend, &cst);
 
   clock_t start, end;
   double time_taken;
@@ -83,7 +83,7 @@ int main(int argc, char *argv[]) {
   }
 
   if (!(cst.options.compile_only))
-    backend.link_function(&cst);
+    backend.link(&cst);
 
   backend_free(&backend);
 

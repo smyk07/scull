@@ -16,9 +16,8 @@ extern "C" {
  * @brief: Initializes the LLVM backend for compilation.
  *
  * @param cst: Pointer to compiler state containing global compilation context
- * @param fst: Pointer to file state containing the parsed program
  */
-void llvm_backend_init(cstate *cst, fstate *fst);
+void llvm_backend_init(cstate *cst);
 
 /*
  * @brief: Compiles the parsed program to LLVM IR.
