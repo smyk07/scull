@@ -36,10 +36,6 @@ $ ./hello
 
 More examples in `./examples`.
 
-> [!NOTE]
-> While cross compilation is supported, cross linking is not.
-> You'll need to link for the target platform.
-
 ## Inspiration
 
 - [The C Programming Language](<https://en.wikipedia.org/wiki/C_(programming_language)>)
