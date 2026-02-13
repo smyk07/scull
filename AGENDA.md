@@ -54,8 +54,10 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 - [x] NEC Move linking to llvm backend, since linking is only needed there (For now)
 
 - [ ] NEC Move to llvm submodule instead of system installation of llvm-21
-  - [ ] basic setup
+  - [x] basic setup
+  - [x] handle linking through cc which is available everywhere
   - [ ] find and fix bugs (eg. `./examples/linear_search.scl`)
+        idk this automatically fixed itself somehow
 
 ### Alternative Backends
 

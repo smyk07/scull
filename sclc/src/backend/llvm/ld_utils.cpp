@@ -16,8 +16,7 @@ void ld_link(const char *output_file,
              const std::vector<const char *> &obj_files) {
   std::vector<const char *> args;
 
-  args.push_back("clang");
-  args.push_back("-fuse-ld=lld");
+  args.push_back("cc");
 
   args.push_back("-o");
   args.push_back(output_file);
@@ -35,8 +34,8 @@ void ld_link(const char *output_file,
   }
 
   if (pid == 0) {
-    execvp("clang", const_cast<char *const *>(args.data()));
-    perror("execvp clang");
+    execvp("cc", const_cast<char *const *>(args.data()));
+    perror("execvp cc");
     _exit(1);
   }
 
