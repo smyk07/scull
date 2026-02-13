@@ -8,9 +8,9 @@
 #include <string.h>
 #include <sys/stat.h>
 
-static size_t err_count = 0;
+static u64 err_count = 0;
 
-void *scu_checked_malloc(size_t size) {
+void *scu_checked_malloc(u64 size) {
   if (size == 0)
     size = 1;
   void *ptr = calloc(1, size);
@@ -21,7 +21,7 @@ void *scu_checked_malloc(size_t size) {
   return ptr;
 }
 
-void *scu_checked_realloc(void *ptr, size_t size) {
+void *scu_checked_realloc(void *ptr, u64 size) {
   if (size == 0)
     size = 1;
   void *newptr = realloc(ptr, size);
@@ -34,7 +34,7 @@ void *scu_checked_realloc(void *ptr, size_t size) {
 
 char *scu_extract_name(const char *filename) {
   const char *dot = strrchr(filename, '.');
-  size_t len;
+  u64 len;
 
   if (dot != NULL) {
     len = dot - filename;
@@ -51,7 +51,7 @@ char *scu_extract_name(const char *filename) {
 
 #define MAX_LEN 4096
 
-int scu_read_file(const char *path, char **buffer) {
+u32 scu_read_file(const char *path, char **buffer) {
   struct stat path_stat;
   stat(path, &path_stat);
 
@@ -60,10 +60,10 @@ int scu_read_file(const char *path, char **buffer) {
     scu_check_errors();
   }
 
-  int tmp_capacity = MAX_LEN;
+  u32 tmp_capacity = MAX_LEN;
   char *tmp = scu_checked_malloc(tmp_capacity * sizeof(char));
 
-  int tmp_size = 0;
+  u32 tmp_size = 0;
 
   FILE *f = fopen(path, "r");
 
@@ -73,7 +73,7 @@ int scu_read_file(const char *path, char **buffer) {
     exit(1);
   }
 
-  int size = 0;
+  u32 size = 0;
 
   do {
     if (tmp_size + MAX_LEN >= tmp_capacity) {
@@ -100,7 +100,7 @@ char *scu_format_string(char *__restrict __format, ...) {
 
   va_list args_copy;
   va_copy(args_copy, args);
-  int length = vsnprintf(NULL, 0, __format, args_copy);
+  u32 length = vsnprintf(NULL, 0, __format, args_copy);
   va_end(args_copy);
 
   if (length < 0) {

@@ -1,4 +1,5 @@
 #include "var.h"
+#include "common.h"
 #include "utils.h"
 
 type get_var_type(ht *variables, variable *var_to_find) {
@@ -16,7 +17,7 @@ type get_var_type(ht *variables, variable *var_to_find) {
   return var->type;
 }
 
-size_t get_var_stack_offset(ht *variables, variable *var_to_find) {
+u64 get_var_stack_offset(ht *variables, variable *var_to_find) {
   if (!variables || !var_to_find || !var_to_find->name)
     return -1;
 

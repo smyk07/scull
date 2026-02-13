@@ -2,13 +2,11 @@
  * parser: Parser for the simple-compiler
  */
 
-#ifndef PARSER
-#define PARSER
+#ifndef PARSER_H
+#define PARSER_H
 
 #include "ast.h"
 #include "ds/dynamic_array.h"
-
-#include <stddef.h>
 
 /*
  * @brief: parses a dynamic_array of tokens into an AST.
@@ -19,4 +17,4 @@
  */
 void parser_parse_program(dynamic_array *tokens, ast *program);
 
-#endif
+#endif // !PARSER_H

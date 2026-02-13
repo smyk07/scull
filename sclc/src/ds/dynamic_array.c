@@ -1,17 +1,18 @@
 #include "ds/dynamic_array.h"
+#include "common.h"
 #include "utils.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-void dynamic_array_init(dynamic_array *da, size_t size) {
+void dynamic_array_init(dynamic_array *da, u64 size) {
   da->items = NULL;
   da->item_size = size;
   da->count = 0;
   da->capacity = 0;
 }
 
-int dynamic_array_get(dynamic_array *da, size_t index, void *item) {
+u32 dynamic_array_get(dynamic_array *da, u64 index, void *item) {
   if (!da || !item || index >= da->count || !da->items) {
     scu_perror("Invalid Dynamic array passed to function.\n");
     return -1;
@@ -22,7 +23,7 @@ int dynamic_array_get(dynamic_array *da, size_t index, void *item) {
   return 0;
 }
 
-int dynamic_array_set(dynamic_array *da, size_t index, void *item) {
+u32 dynamic_array_set(dynamic_array *da, u64 index, void *item) {
   if (!da || !item || !da->items || da->item_size == 0 || index >= da->count ||
       da->capacity == 0) {
     scu_perror("Invalid dynamic array passed to function.\n");
@@ -34,7 +35,7 @@ int dynamic_array_set(dynamic_array *da, size_t index, void *item) {
   return 0;
 }
 
-int dynamic_array_append(dynamic_array *da, void *item) {
+u32 dynamic_array_append(dynamic_array *da, void *item) {
   if (!da || !item || da->item_size == 0) {
     scu_perror("Invalid dynamic array passed to function.\n");
     return -1;
@@ -50,7 +51,7 @@ int dynamic_array_append(dynamic_array *da, void *item) {
   }
 
   if (da->count == da->capacity) {
-    unsigned int new_capacity = da->capacity * 2;
+    u64 new_capacity = da->capacity * 2;
     void *new_items =
         scu_checked_realloc(da->items, da->item_size * new_capacity);
     da->items = new_items;
@@ -62,14 +63,14 @@ int dynamic_array_append(dynamic_array *da, void *item) {
   return 0;
 }
 
-int dynamic_array_insert(dynamic_array *da, size_t index, void *item) {
+u32 dynamic_array_insert(dynamic_array *da, u64 index, void *item) {
   if (!da || !item || da->item_size == 0 || index > da->count) {
     scu_perror("Invalid dynamic array passed to function.\n");
     return -1;
   }
 
   if (da->count == da->capacity) {
-    unsigned int new_capacity = da->capacity * 2;
+    u64 new_capacity = da->capacity * 2;
     void *new_items =
         scu_checked_realloc(da->items, da->item_size * new_capacity);
     da->items = new_items;
@@ -84,7 +85,7 @@ int dynamic_array_insert(dynamic_array *da, size_t index, void *item) {
   return 0;
 }
 
-int dynamic_array_remove(dynamic_array *da, size_t index) {
+u32 dynamic_array_remove(dynamic_array *da, u64 index) {
   if (!da || da->item_size == 0 || index >= da->count) {
     scu_perror("Invalid dynamic array passed to function.\n");
     return -1;
@@ -100,13 +101,13 @@ int dynamic_array_remove(dynamic_array *da, size_t index) {
   return 0;
 }
 
-int dynamic_array_pop(dynamic_array *da, void *item) {
+u32 dynamic_array_pop(dynamic_array *da, void *item) {
   if (!da || da->item_size == 0 || da->count == 0) {
     scu_perror("Invalid dynamic array passed to function.\n");
     return -1;
   }
 
-  int return_value = dynamic_array_get(da, da->count - 1, item);
+  u32 return_value = dynamic_array_get(da, da->count - 1, item);
   if (return_value != 0)
     return return_value;
 
@@ -125,7 +126,7 @@ void dynamic_array_free(dynamic_array *da) {
 }
 
 void dynamic_array_free_items(dynamic_array *da) {
-  for (unsigned int i = 0; i < da->count; i++) {
+  for (u64 i = 0; i < da->count; i++) {
     char *item = (char *)da->items + (i * da->item_size);
     free(item);
   }

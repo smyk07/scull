@@ -1,4 +1,5 @@
 #include "lexer.h"
+#include "common.h"
 #include "ds/dynamic_array.h"
 #include "token.h"
 #include "utils.h"
@@ -15,7 +16,7 @@
  */
 typedef struct string_slice {
   const char *str;
-  size_t len;
+  u64 len;
 } string_slice;
 
 /*
@@ -25,7 +26,7 @@ typedef struct string_slice {
  * @param str: pointer to a char pointer where the allocated string will be
  * stored.
  */
-static int string_slice_to_owned(string_slice *ss, char **str) {
+static u32 string_slice_to_owned(string_slice *ss, char **str) {
   if (!ss || !ss->str || !str)
     return -1;
 
@@ -53,7 +54,7 @@ static char lexer_read_char(lexer *l);
  * @param buffer: const char* which is the source buffer to be lexed.
  * @param buffer_len: size of buffer.
  */
-static void lexer_init(lexer *l, const char *buffer, size_t buffer_len) {
+static void lexer_init(lexer *l, const char *buffer, u64 buffer_len) {
   l->buffer = buffer;
   l->buffer_len = buffer_len;
   l->line = 1;
@@ -131,7 +132,7 @@ restart:
     char *temp = NULL;
     string_slice_to_owned(&slice, &temp);
 
-    int value = atoi(temp);
+    u32 value = atoi(temp);
     free(temp);
 
     return (token){
@@ -184,8 +185,8 @@ restart:
   else if (l->ch == '"') {
     lexer_read_char(l);
 
-    size_t capacity = 16;
-    size_t length = 0;
+    u64 capacity = 16;
+    u64 length = 0;
     char *string_value = scu_checked_malloc(capacity);
 
     if (l->ch == '"') {
@@ -335,7 +336,7 @@ restart:
       }
       char *temp = NULL;
       string_slice_to_owned(&slice, &temp);
-      int value = -atoi(temp);
+      u32 value = -atoi(temp);
       free(temp);
       return (token){
           .kind = TOKEN_INT_LITERAL, .value.integer = value, .line = l->line};
@@ -474,8 +475,8 @@ restart:
   }
 }
 
-void lexer_tokenize(const char *buffer, size_t buffer_len,
-                    dynamic_array *tokens, const char *include_dir) {
+void lexer_tokenize(const char *buffer, u64 buffer_len, dynamic_array *tokens,
+                    const char *include_dir) {
   lexer lexer;
   lexer_init(&lexer, buffer, buffer_len);
 
@@ -485,13 +486,13 @@ void lexer_tokenize(const char *buffer, size_t buffer_len,
 
     if (tok.kind == TOKEN_PDIR_INCLUDE) {
       token incl_str_token = lexer_next_token(&lexer);
-      size_t total_len =
+      u64 total_len =
           strlen(include_dir) + 1 + strlen(incl_str_token.value.str) + 1;
       char *filepath_to_include = malloc(total_len);
       snprintf(filepath_to_include, total_len, "%s/%s", include_dir,
                incl_str_token.value.str);
       char *incl_buffer = NULL;
-      size_t incl_buffer_len = scu_read_file(filepath_to_include, &incl_buffer);
+      u64 incl_buffer_len = scu_read_file(filepath_to_include, &incl_buffer);
 
       lexer_tokenize(incl_buffer, incl_buffer_len, tokens, include_dir);
 

@@ -5,9 +5,8 @@
 #ifndef TOKEN
 #define TOKEN
 
+#include "common.h"
 #include "ds/dynamic_array.h"
-
-#include <stddef.h>
 
 /*
  * @enum token_kind: enumeration of all kinds of tokens supported by the lexer.
@@ -108,7 +107,7 @@ typedef enum token_kind {
  * token. Values can be integers, characters, or strings for labels.
  */
 typedef union token_literal_value {
-  int integer;
+  u32 integer;
   char character;
   char *str;
 } token_literal_value;
@@ -119,7 +118,7 @@ typedef union token_literal_value {
 typedef struct token {
   token_kind kind;
   token_literal_value value;
-  size_t line; // <-- Where the token is placed in the source buffer.
+  u64 line; // <-- Where the token is placed in the source buffer.
 } token;
 
 /*

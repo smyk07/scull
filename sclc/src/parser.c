@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "ast.h"
+#include "common.h"
 #include "ds/arena.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
@@ -14,7 +15,7 @@ static mem_arena *ast_arena;
  */
 typedef struct parser {
   dynamic_array tokens;
-  size_t index;
+  u64 index;
 } parser;
 
 /*
@@ -341,7 +342,7 @@ static void parse_rel(parser *p, rel_node *rel) {
   parser_current(p, &token);
   rel->line = token.line;
 
-  for (size_t i = 0; i < sizeof(mappings) / sizeof(mappings[0]); i++) {
+  for (u64 i = 0; i < sizeof(mappings) / sizeof(mappings[0]); i++) {
     if (token.kind == mappings[i].token_type) {
       parser_advance(p);
       parse_term_for_expr(p, &rhs);
@@ -433,7 +434,7 @@ static void parse_declare(parser *p, instr_node *instr) {
 
   type _type = TYPE_VOID;
   char *_name;
-  int _line;
+  u32 _line;
   bool is_array = false;
   expr_node *size_expr = NULL;
 
@@ -547,7 +548,7 @@ static void parse_assign(parser *p, instr_node *instr) {
 
   parser_current(p, &token);
 
-  size_t ident_line = instr->line = token.line;
+  u64 ident_line = instr->line = token.line;
   char *ident_name = token.value.str;
 
   if (token.kind == TOKEN_POINTER) {

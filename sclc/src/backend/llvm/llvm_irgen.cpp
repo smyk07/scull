@@ -2,6 +2,7 @@
 #include "ast.h"
 
 extern "C" {
+#include "common.h"
 #include "ds/dynamic_array.h"
 #include "utils.h"
 #include "var.h"
@@ -93,7 +94,7 @@ static llvm::Value *llvm_irgen_term(llvm_backend_ctx &ctx, term_node *term) {
     }
 
     std::vector<llvm::Value *> args;
-    for (size_t i = 0; i < call->parameters.count; i++) {
+    for (u64 i = 0; i < call->parameters.count; i++) {
       expr_node arg;
       dynamic_array_get(&call->parameters, i, &arg);
 
@@ -263,7 +264,7 @@ static void llvm_irgen_instr_declare(llvm_backend_ctx &ctx, variable *var) {
   llvm::Type *var_type = scl_type_to_llvm(ctx, var->type);
 
   if (var->is_array && var->dimensions > 0) {
-    for (int i = var->dimensions - 1; i >= 0; i--) {
+    for (u32 i = var->dimensions - 1; i >= 0; i--) {
       var_type = llvm::ArrayType::get(var_type, var->dimension_sizes[i]);
     }
   }
@@ -288,7 +289,7 @@ static void llvm_irgen_instr_initialize(llvm_backend_ctx &ctx,
   llvm::Type *var_type = scl_type_to_llvm(ctx, var->type);
 
   if (var->is_array && var->dimensions > 0) {
-    for (int i = var->dimensions - 1; i >= 0; i--) {
+    for (u32 i = var->dimensions - 1; i >= 0; i--) {
       var_type = llvm::ArrayType::get(var_type, var->dimension_sizes[i]);
     }
   }
@@ -349,7 +350,7 @@ static void llvm_irgen_instr_declare_array(llvm_backend_ctx &ctx,
 
   if (llvm::ConstantInt *const_size =
           llvm::dyn_cast<llvm::ConstantInt>(size_val)) {
-    uint64_t array_size = const_size->getZExtValue();
+    u64 array_size = const_size->getZExtValue();
     llvm::Type *array_type = llvm::ArrayType::get(elem_type, array_size);
     alloca = create_entry_block_alloca(fn, var->name, array_type);
   } else {
@@ -401,7 +402,7 @@ static void llvm_irgen_initialize_array(llvm_backend_ctx &ctx,
       tmp_builder.CreateAlloca(elem_type, size_val, var->name);
   named_values[var->name] = alloca;
 
-  for (size_t i = 0; i < arr->literal.elements.count; i++) {
+  for (u64 i = 0; i < arr->literal.elements.count; i++) {
     expr_node elem_expr;
     dynamic_array_get(&arr->literal.elements, i, &elem_expr);
 
@@ -522,7 +523,7 @@ static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
   if (if_stmt->then.kind == COND_SINGLE_INSTR) {
     llvm_irgen_instr(ctx, if_stmt->then.single);
   } else {
-    for (size_t i = 0; i < if_stmt->then.multi.count; i++) {
+    for (u64 i = 0; i < if_stmt->then.multi.count; i++) {
       instr_node instr;
       dynamic_array_get(&if_stmt->then.multi, i, &instr);
       llvm_irgen_instr(ctx, &instr);
@@ -532,7 +533,7 @@ static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
     ctx.builder->CreateBr(merge_bb);
   }
 
-  for (size_t i = 0; i < if_stmt->else_ifs.count; i++) {
+  for (u64 i = 0; i < if_stmt->else_ifs.count; i++) {
     if_node elif;
     dynamic_array_get(&if_stmt->else_ifs, i, &elif);
 
@@ -566,7 +567,7 @@ static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
     if (elif.then.kind == COND_SINGLE_INSTR) {
       llvm_irgen_instr(ctx, elif.then.single);
     } else {
-      for (size_t j = 0; j < elif.then.multi.count; j++) {
+      for (u64 j = 0; j < elif.then.multi.count; j++) {
         instr_node instr;
         dynamic_array_get(&elif.then.multi, j, &instr);
         llvm_irgen_instr(ctx, &instr);
@@ -585,7 +586,7 @@ static void llvm_irgen_instr_if(llvm_backend_ctx &ctx, if_node *if_stmt) {
     if (if_stmt->else_->kind == COND_SINGLE_INSTR) {
       llvm_irgen_instr(ctx, if_stmt->else_->single);
     } else {
-      for (size_t i = 0; i < if_stmt->else_->multi.count; i++) {
+      for (u64 i = 0; i < if_stmt->else_->multi.count; i++) {
         instr_node instr;
         dynamic_array_get(&if_stmt->else_->multi, i, &instr);
         llvm_irgen_instr(ctx, &instr);
@@ -619,7 +620,7 @@ static void llvm_irgen_instr_match(llvm_backend_ctx &ctx,
 
   llvm::BasicBlock *default_bb = merge_bb;
 
-  for (size_t i = 0; i < match_stmt->cases.count; i++) {
+  for (u64 i = 0; i < match_stmt->cases.count; i++) {
     match_case_node case_node;
     dynamic_array_get(&match_stmt->cases, i, &case_node);
     if (case_node.kind == MATCH_CASE_DEFAULT) {
@@ -627,7 +628,7 @@ static void llvm_irgen_instr_match(llvm_backend_ctx &ctx,
     }
   }
 
-  for (size_t i = 0; i < match_stmt->cases.count; i++) {
+  for (u64 i = 0; i < match_stmt->cases.count; i++) {
     match_case_node case_node;
     dynamic_array_get(&match_stmt->cases, i, &case_node);
 
@@ -648,7 +649,7 @@ static void llvm_irgen_instr_match(llvm_backend_ctx &ctx,
     case MATCH_CASE_VALUES: {
       llvm::Value *match_cond = nullptr;
 
-      for (size_t j = 0; j < case_node.values.values.count; j++) {
+      for (u64 j = 0; j < case_node.values.values.count; j++) {
         expr_node *expr;
         dynamic_array_get(&case_node.values.values, j, &expr);
         llvm::Value *case_val = llvm_irgen_expr(ctx, expr);
@@ -689,7 +690,7 @@ static void llvm_irgen_instr_match(llvm_backend_ctx &ctx,
     if (case_node.body.kind == COND_SINGLE_INSTR) {
       llvm_irgen_instr(ctx, case_node.body.single);
     } else {
-      for (size_t j = 0; j < case_node.body.multi.count; j++) {
+      for (u64 j = 0; j < case_node.body.multi.count; j++) {
         instr_node instr;
         dynamic_array_get(&case_node.body.multi, j, &instr);
         llvm_irgen_instr(ctx, &instr);
@@ -820,7 +821,7 @@ static void llvm_irgen_instr_loop(llvm_backend_ctx &ctx, loop_node *loop) {
 
   ctx.builder->SetInsertPoint(loop_body);
 
-  for (size_t i = 0; i < loop->instrs.count; i++) {
+  for (u64 i = 0; i < loop->instrs.count; i++) {
     instr_node instr;
     dynamic_array_get(&loop->instrs, i, &instr);
 
@@ -890,7 +891,7 @@ static void llvm_irgen_instr_fn_define(llvm_backend_ctx &ctx, fn_node *fn) {
   label_blocks.clear();
 
   std::vector<llvm::Type *> param_types;
-  for (size_t i = 0; i < fn->parameters.count; i++) {
+  for (u64 i = 0; i < fn->parameters.count; i++) {
     variable param;
     dynamic_array_get(&fn->parameters, i, &param);
 
@@ -933,7 +934,7 @@ static void llvm_irgen_instr_fn_define(llvm_backend_ctx &ctx, fn_node *fn) {
     named_values[param.name] = alloca;
   }
 
-  for (size_t i = 0; i < fn->defined.instrs.count; i++) {
+  for (u64 i = 0; i < fn->defined.instrs.count; i++) {
     instr_node instr;
     dynamic_array_get(&fn->defined.instrs, i, &instr);
 
@@ -956,7 +957,7 @@ static void llvm_irgen_instr_fn_define(llvm_backend_ctx &ctx, fn_node *fn) {
 
 static void llvm_irgen_instr_fn_declare(llvm_backend_ctx &ctx, fn_node *fn) {
   std::vector<llvm::Type *> param_types;
-  for (size_t i = 0; i < fn->parameters.count; i++) {
+  for (u64 i = 0; i < fn->parameters.count; i++) {
     variable param;
     dynamic_array_get(&fn->parameters, i, &param);
 
@@ -1008,7 +1009,7 @@ static void llvm_irgen_instr_fn_call(llvm_backend_ctx &ctx,
   }
 
   std::vector<llvm::Value *> args;
-  for (size_t i = 0; i < call->parameters.count; i++) {
+  for (u64 i = 0; i < call->parameters.count; i++) {
     expr_node arg_expr;
     dynamic_array_get(&call->parameters, i, &arg_expr);
 

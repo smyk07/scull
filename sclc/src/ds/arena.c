@@ -1,17 +1,16 @@
 #include "ds/arena.h"
+#include "common.h"
 #include "utils.h"
 
-#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define ALIGN_UP_POW2(n, p)                                                    \
-  ((uint64_t)n + ((uint64_t)p - 1)) & (~((uint64_t)p - 1))
+#define ALIGN_UP_POW2(n, p) ((u64)n + ((u64)p - 1)) & (~((u64)p - 1))
 
 #define ARENA_ALIGN (sizeof(void *))
 
-void arena_init(mem_arena *arena, uint64_t capacity) {
-  arena->buffer = (uint8_t *)scu_checked_malloc(capacity);
+void arena_init(mem_arena *arena, u64 capacity) {
+  arena->buffer = (u8 *)scu_checked_malloc(capacity);
   arena->capacity = capacity;
   arena->pos = 0;
 }
@@ -25,9 +24,9 @@ void arena_free(mem_arena *arena) {
   arena->pos = 0;
 }
 
-void *arena_push(mem_arena *arena, uint64_t size) {
-  uint64_t pos_aligned = ALIGN_UP_POW2(arena->pos, ARENA_ALIGN);
-  uint64_t new_pos = pos_aligned + size;
+void *arena_push(mem_arena *arena, u64 size) {
+  u64 pos_aligned = ALIGN_UP_POW2(arena->pos, ARENA_ALIGN);
+  u64 new_pos = pos_aligned + size;
 
   if (new_pos > arena->capacity) {
     scu_perror(
@@ -42,13 +41,13 @@ void *arena_push(mem_arena *arena, uint64_t size) {
   return out;
 }
 
-void arena_pop(mem_arena *arena, uint64_t size) {
+void arena_pop(mem_arena *arena, u64 size) {
   if (size > arena->pos)
     size = arena->pos;
   arena->pos -= size;
 }
 
-void arena_pop_to(mem_arena *arena, uint64_t pos) {
+void arena_pop_to(mem_arena *arena, u64 pos) {
   if (pos <= arena->pos)
     arena->pos = pos;
 }

@@ -5,7 +5,7 @@
 #ifndef HT_H
 #define HT_H
 
-#include <stddef.h>
+#include "common.h"
 
 /*
  * @struct ht_item: represents an individual item inside a hash table.
@@ -19,12 +19,12 @@ typedef struct ht_item {
  * @struct ht: represents the hash table.
  */
 typedef struct ht {
-  size_t base_capacity;
-  size_t capacity;
-  size_t count;
+  u64 base_capacity;
+  u64 capacity;
+  u64 count;
 
   ht_item **items;
-  size_t value_size;
+  u64 value_size;
 } ht;
 
 /*
@@ -34,7 +34,7 @@ typedef struct ht {
  *
  * @return: pointer to the newly initialized hash table.
  */
-ht *ht_create(const size_t value_size);
+ht *ht_create(const u64 value_size);
 
 /*
  * @brief: destroy an existing hash table.
@@ -49,7 +49,7 @@ void ht_destroy(ht *table);
  * @param table: pointer to an already allocated ht
  * @param value_size: size of the value (void *) of each item.
  */
-void ht_init(ht *table, const size_t value_size);
+void ht_init(ht *table, const u64 value_size);
 
 /*
  * @brief: free all memory associated with a ht

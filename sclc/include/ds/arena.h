@@ -8,12 +8,12 @@
 #ifndef ARENA_H
 #define ARENA_H
 
-#include <stdint.h>
+#include "common.h"
 
 typedef struct mem_arena {
-  uint64_t capacity;
-  uint64_t pos;
-  uint8_t *buffer;
+  u64 capacity;
+  u64 pos;
+  u8 *buffer;
 } mem_arena;
 
 /*
@@ -23,7 +23,7 @@ typedef struct mem_arena {
  * @param arena: pointer to a mem_arena
  * @param capacity: Maximum size in bytes that the arena can hold
  */
-void arena_init(mem_arena *arena, uint64_t capacity);
+void arena_init(mem_arena *arena, u64 capacity);
 
 /*
  * @brief: Frees a mem_arena
@@ -40,7 +40,7 @@ void arena_free(mem_arena *arena);
  *
  * @return: Pointer to allocated memory, or NULL if arena is full
  */
-void *arena_push(mem_arena *arena, uint64_t size);
+void *arena_push(mem_arena *arena, u64 size);
 
 /*
  * @brief: Deallocates the most recently allocated memory from the arena.
@@ -48,7 +48,7 @@ void *arena_push(mem_arena *arena, uint64_t size);
  * @param arena: Pointer to the arena to deallocate from
  * @param size: Number of bytes to deallocate from the top
  */
-void arena_pop(mem_arena *arena, uint64_t size);
+void arena_pop(mem_arena *arena, u64 size);
 
 /*
  * @brief: Resets arena to a specific position, freeing all memory above it.
@@ -56,7 +56,7 @@ void arena_pop(mem_arena *arena, uint64_t size);
  * @param arena: Pointer to the arena
  * @param pos: Position in bytes to reset the arena to
  */
-void arena_pop_to(mem_arena *arena, uint64_t pos);
+void arena_pop_to(mem_arena *arena, u64 pos);
 
 /*
  * @brief: Clears the entire arena, freeing all allocated memory.

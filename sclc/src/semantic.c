@@ -11,7 +11,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include <string.h>
 
-int evaluate_const_expr(expr_node *expr) {
+u32 evaluate_const_expr(expr_node *expr) {
   if (expr == NULL) {
     return 0;
   }
@@ -37,7 +37,7 @@ int evaluate_const_expr(expr_node *expr) {
            evaluate_const_expr(expr->binary.right);
 
   case EXPR_DIVIDE: {
-    int right = evaluate_const_expr(expr->binary.right);
+    u32 right = evaluate_const_expr(expr->binary.right);
     if (right == 0) {
       scu_perror("Division by zero in array size\n");
       return 0;
@@ -46,7 +46,7 @@ int evaluate_const_expr(expr_node *expr) {
   }
 
   case EXPR_MODULO: {
-    int right = evaluate_const_expr(expr->binary.right);
+    u32 right = evaluate_const_expr(expr->binary.right);
     if (right == 0) {
       scu_perror("Division by zero in array size\n");
       return 0;
@@ -84,7 +84,7 @@ static const char *type_to_str(type type) {
  * @param line: line number of the function call.
  */
 static void check_function_call(fn_call_node *fn_call, ht *functions,
-                                ht *variables, size_t line);
+                                ht *variables, u64 line);
 
 /*
  * @brief: check for types in an instr_node (declaration)
@@ -97,7 +97,7 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions);
 /*
  * @brief: running stack offset counter for allocating variables and arrays.
  */
-static size_t current_stack_offset = 0;
+static u64 current_stack_offset = 0;
 
 /*
  * @brief: insert a new variable into the variables hash table.
@@ -133,8 +133,8 @@ static void declare_array(variable *arr_to_declare, expr_node *size_expr,
   if (var)
     return;
 
-  int array_size = evaluate_const_expr(size_expr);
-  size_t size_bytes = array_size * 4;
+  u32 array_size = evaluate_const_expr(size_expr);
+  u64 size_bytes = array_size * 4;
   arr_to_declare->stack_offset = current_stack_offset;
   current_stack_offset += size_bytes;
 
@@ -217,7 +217,7 @@ static void cond_block_check_variables(cond_block_node *blk, ht *variables,
     instr_check_variables(blk->single, variables, functions);
     instr_typecheck(blk->single, variables, functions);
   } else {
-    for (size_t i = 0; i < blk->multi.count; i++) {
+    for (u64 i = 0; i < blk->multi.count; i++) {
       instr_node instr_;
       dynamic_array_get(&blk->multi, i, &instr_);
       instr_check_variables(&instr_, variables, functions);
@@ -241,7 +241,7 @@ static void check_loop(loop_node *loop, ht *parent_variables, ht *functions) {
   // dont break.
   // This is just a temporary solution
   // TODO THIS NEEDS TO BE BETTER (along with a lot of other things)
-  for (size_t i = 0; i < parent_variables->capacity; i++) {
+  for (u64 i = 0; i < parent_variables->capacity; i++) {
     ht_item *item = parent_variables->items[i];
     if (item && item->key && item->value) {
       ht_insert(loop->variables, item->key, item->value);
@@ -258,7 +258,7 @@ static void check_loop(loop_node *loop, ht *parent_variables, ht *functions) {
     declare_variables(&loop->_for.iterator, loop->variables);
   }
 
-  for (size_t i = 0; i < loop->instrs.count; i++) {
+  for (u64 i = 0; i < loop->instrs.count; i++) {
     instr_node instr;
     dynamic_array_get(&loop->instrs, i, &instr);
 
@@ -294,8 +294,7 @@ static void instr_check_variables(instr_node *instr, ht *variables,
   case INSTR_INITIALIZE_ARRAY:
     declare_array(&instr->initialize_array.var,
                   instr->initialize_array.size_expr, variables);
-    for (size_t i = 0; i < instr->initialize_array.literal.elements.count;
-         i++) {
+    for (u64 i = 0; i < instr->initialize_array.literal.elements.count; i++) {
       expr_node elem;
       dynamic_array_get(&instr->initialize_array.literal.elements, i, &elem);
       expr_check_variables(&elem, variables, functions);
@@ -330,13 +329,13 @@ static void instr_check_variables(instr_node *instr, ht *variables,
   case INSTR_MATCH:
     expr_check_variables(instr->match.expr, variables, functions);
 
-    for (size_t i = 0; i < instr->match.cases.count; i++) {
+    for (u64 i = 0; i < instr->match.cases.count; i++) {
       match_case_node case_node;
       dynamic_array_get(&instr->match.cases, i, &case_node);
 
       switch (case_node.kind) {
       case MATCH_CASE_VALUES:
-        for (size_t j = 0; j < case_node.values.values.count; j++) {
+        for (u64 j = 0; j < case_node.values.values.count; j++) {
           expr_node *expr;
           dynamic_array_get(&case_node.values.values, j, &expr);
           expr_check_variables(expr, variables, functions);
@@ -371,7 +370,7 @@ static void instr_check_variables(instr_node *instr, ht *variables,
  */
 static void check_label(dynamic_array *labels, instr_node *instr) {
   const char *label_name = instr->label.label;
-  for (unsigned int i = 0; i < labels->count; i++) {
+  for (u64 i = 0; i < labels->count; i++) {
     char *existing;
     dynamic_array_get(labels, i, &existing);
     if (strcmp(label_name, existing) == 0) {
@@ -390,8 +389,8 @@ static void check_label(dynamic_array *labels, instr_node *instr) {
  * @param instr: pointer to an instr_node.
  */
 static void check_goto(dynamic_array *labels, instr_node *instr) {
-  int found = 0;
-  for (unsigned int i = 0; i < labels->count; i++) {
+  u32 found = 0;
+  for (u64 i = 0; i < labels->count; i++) {
     char *label;
     dynamic_array_get(labels, i, &label);
     if (strcmp(label, instr->goto_.label) == 0) {
@@ -424,7 +423,7 @@ static void cond_block_check_labels(cond_block_node *block,
           &((dynamic_array){.items = instr, .count = 1, .capacity = 1}),
           labels);
   } else {
-    for (size_t i = 0; i < block->multi.count; i++) {
+    for (u64 i = 0; i < block->multi.count; i++) {
       instr_node instr;
       dynamic_array_get(&block->multi, i, &instr);
 
@@ -448,7 +447,7 @@ static void cond_block_check_labels(cond_block_node *block,
  */
 static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels) {
   // check labels first
-  for (size_t i = 0; i < instrs->count; i++) {
+  for (u64 i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
 
@@ -457,7 +456,7 @@ static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels) {
   }
 
   // then check goto
-  for (size_t i = 0; i < instrs->count; i++) {
+  for (u64 i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
 
@@ -466,7 +465,7 @@ static void instrs_check_labels(dynamic_array *instrs, dynamic_array *labels) {
   }
 
   // then check if
-  for (size_t i = 0; i < instrs->count; i++) {
+  for (u64 i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
 
@@ -554,7 +553,7 @@ static type term_type(term_node *term, ht *variables, ht *functions) {
                  term->fn_call.name, fn->parameters.count, term->line);
     }
 
-    for (size_t i = 0;
+    for (u64 i = 0;
          i < term->fn_call.parameters.count && i < fn->parameters.count; i++) {
       expr_node arg_expr;
       dynamic_array_get(&term->fn_call.parameters, i, &arg_expr);
@@ -672,8 +671,7 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions) {
 
   case INSTR_INITIALIZE_ARRAY: {
     type array_type = instr->initialize_array.var.type;
-    for (size_t i = 0; i < instr->initialize_array.literal.elements.count;
-         i++) {
+    for (u64 i = 0; i < instr->initialize_array.literal.elements.count; i++) {
       expr_node elem;
       dynamic_array_get(&instr->initialize_array.literal.elements, i, &elem);
       type elem_type = expr_type(&elem, array_type, variables, functions);
@@ -733,7 +731,7 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions) {
   case INSTR_IF: {
     rel_typecheck(&instr->if_.rel, variables, functions);
     if (instr->if_.else_ifs.count > 0) {
-      for (size_t i = 0; i < instr->if_.else_ifs.count; i++) {
+      for (u64 i = 0; i < instr->if_.else_ifs.count; i++) {
         if_node else_if_node;
         dynamic_array_get(&instr->if_.else_ifs, i, &else_if_node);
         rel_typecheck(&else_if_node.rel, variables, functions);
@@ -746,13 +744,13 @@ static void instr_typecheck(instr_node *instr, ht *variables, ht *functions) {
     type match_expr_type =
         expr_type(instr->match.expr, TYPE_INT, variables, functions);
 
-    for (size_t i = 0; i < instr->match.cases.count; i++) {
+    for (u64 i = 0; i < instr->match.cases.count; i++) {
       match_case_node case_node;
       dynamic_array_get(&instr->match.cases, i, &case_node);
 
       switch (case_node.kind) {
       case MATCH_CASE_VALUES: {
-        for (size_t j = 0; j < case_node.values.values.count; j++) {
+        for (u64 j = 0; j < case_node.values.values.count; j++) {
           expr_node *expr;
           dynamic_array_get(&case_node.values.values, j, &expr);
           type value_type =
@@ -857,7 +855,7 @@ static void register_function(fn_node *fn, ht *functions) {
  * @param line: line number of the function call.
  */
 static void check_function_call(fn_call_node *fn_call, ht *functions,
-                                ht *variables, size_t line) {
+                                ht *variables, u64 line) {
   if (!fn_call || !fn_call->name)
     return;
 
@@ -883,7 +881,7 @@ static void check_function_call(fn_call_node *fn_call, ht *functions,
     return;
   }
 
-  for (size_t i = 0; i < fn_call->parameters.count && i < fn->parameters.count;
+  for (u64 i = 0; i < fn_call->parameters.count && i < fn->parameters.count;
        i++) {
     expr_node arg_expr;
     dynamic_array_get(&fn_call->parameters, i, &arg_expr);
@@ -911,7 +909,7 @@ static void check_function_call(fn_call_node *fn_call, ht *functions,
  * @param line: line number of the return statement.
  */
 static void check_return_statement(return_node *ret, fn_node *fn, ht *variables,
-                                   ht *functions, size_t line) {
+                                   ht *functions, u64 line) {
   if (!ret || !fn)
     return;
 
@@ -922,7 +920,7 @@ static void check_return_statement(return_node *ret, fn_node *fn, ht *variables,
     return;
   }
 
-  for (size_t i = 0; i < ret->returnvals.count; i++) {
+  for (u64 i = 0; i < ret->returnvals.count; i++) {
     expr_node ret_expr;
     dynamic_array_get(&ret->returnvals, i, &ret_expr);
 
@@ -950,7 +948,7 @@ static void register_function_parameters(fn_node *fn) {
   if (fn->kind != FN_DEFINED)
     return;
 
-  for (size_t i = 0; i < fn->parameters.count; i++) {
+  for (u64 i = 0; i < fn->parameters.count; i++) {
     variable param;
     dynamic_array_get(&fn->parameters, i, &param);
     param.stack_offset = i;
@@ -972,10 +970,10 @@ static void check_function_body(fn_node *fn, ht *functions) {
 
   register_function_parameters(fn);
 
-  size_t saved_offset = current_stack_offset;
+  u64 saved_offset = current_stack_offset;
   current_stack_offset = fn->parameters.count;
 
-  for (size_t i = 0; i < fn->defined.instrs.count; i++) {
+  for (u64 i = 0; i < fn->defined.instrs.count; i++) {
     instr_node instr;
     dynamic_array_get(&fn->defined.instrs, i, &instr);
 
@@ -993,7 +991,7 @@ static void check_function_body(fn_node *fn, ht *functions) {
 
 void check_semantics(dynamic_array *instrs, ht *variables, ht *functions) {
   // Define and declare any / all functions
-  for (unsigned int i = 0; i < instrs->count; i++) {
+  for (u64 i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
 
@@ -1007,7 +1005,7 @@ void check_semantics(dynamic_array *instrs, ht *variables, ht *functions) {
   }
 
   // Validate everything
-  for (unsigned int i = 0; i < instrs->count; i++) {
+  for (u64 i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
 

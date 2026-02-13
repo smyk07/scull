@@ -11,11 +11,9 @@
 #ifndef CSTATE_H
 #define CSTATE_H
 
+#include "common.h"
 #include "ds/arena.h"
 #include "ds/dynamic_array.h"
-
-#include <stdbool.h>
-#include <stddef.h>
 
 /*
  * @enum opt_level: represents optimization levels
@@ -114,7 +112,7 @@ typedef struct cstate {
  * @param argv: array of arguments (string)
  *
  */
-void cstate_init(cstate *cst, int argc, char *argv[]);
+void cstate_init(cstate *cst, u32 argc, char *argv[]);
 
 /*
  * @brief: Free all associated memory of a compiler state

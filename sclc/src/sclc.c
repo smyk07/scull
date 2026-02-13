@@ -27,15 +27,12 @@
 #include "semantic.h"
 #include "utils.h"
 
-#include <stddef.h>
-#include <stdlib.h>
-#include <string.h>
 #include <time.h>
 
 int main(int argc, char *argv[]) {
   // Initialize compiler state
   cstate cst = {0};
-  cstate_init(&cst, argc, argv);
+  cstate_init(&cst, (u32)argc, argv);
 
   backend backend;
   backend_init(&backend);
@@ -44,7 +41,7 @@ int main(int argc, char *argv[]) {
   double time_taken;
   start = clock();
 
-  for (size_t i = 0; i < cst.files.count; i++) {
+  for (u64 i = 0; i < cst.files.count; i++) {
     fstate *fst;
     dynamic_array_get(&cst.files, i, &fst);
 

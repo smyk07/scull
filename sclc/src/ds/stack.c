@@ -1,10 +1,11 @@
 #include "ds/stack.h"
+#include "common.h"
 #include "utils.h"
 
 #include <stdlib.h>
 #include <string.h>
 
-int stack_init(stack *s, size_t item_size) {
+u32 stack_init(stack *s, u64 item_size) {
   if (!s) {
     scu_perror("Invalid stack pointer passed to stack_init.\n");
     return -1;
@@ -16,7 +17,7 @@ int stack_init(stack *s, size_t item_size) {
   return 0;
 }
 
-static int stack_expand(stack *s) {
+static u32 stack_expand(stack *s) {
   if (!s) {
     scu_perror("Invalid stack pointer passed to stack_expand.\n");
     return -1;
@@ -25,14 +26,14 @@ static int stack_expand(stack *s) {
     scu_perror("Uninitialized stack passed to stack_expand.\n");
     return -1;
   }
-  size_t new_capacity = s->capacity * STACK_RESIZE_FACTOR;
+  u64 new_capacity = s->capacity * STACK_RESIZE_FACTOR;
   void *new_items = scu_checked_realloc(s->items, s->item_size * new_capacity);
   s->items = new_items;
   s->capacity = new_capacity;
   return 0;
 }
 
-static int stack_shrink(stack *s) {
+static u32 stack_shrink(stack *s) {
   if (!s) {
     scu_perror("Invalid stack pointer passed to stack_shrink.\n");
     return -1;
@@ -41,7 +42,7 @@ static int stack_shrink(stack *s) {
     scu_perror("Uninitialized stack passed to stack_shrink.\n");
     return -1;
   }
-  size_t new_capacity = s->capacity / STACK_RESIZE_FACTOR;
+  u64 new_capacity = s->capacity / STACK_RESIZE_FACTOR;
   if (new_capacity < STACK_INITIAL_CAPACITY) {
     new_capacity = STACK_INITIAL_CAPACITY;
   }
@@ -51,7 +52,7 @@ static int stack_shrink(stack *s) {
   return 0;
 }
 
-int stack_push(stack *s, void *item) {
+u32 stack_push(stack *s, void *item) {
   if (!s || !item) {
     scu_perror("Invalid parameter passed to stack_push.\n");
     return -1;
@@ -74,7 +75,7 @@ int stack_push(stack *s, void *item) {
   return 0;
 }
 
-int stack_pop(stack *s, void *item) {
+u32 stack_pop(stack *s, void *item) {
   if (!s || !item) {
     scu_perror("Invalid parameter passed to stack_pop.\n");
     return -1;

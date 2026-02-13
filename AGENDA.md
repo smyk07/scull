@@ -14,7 +14,6 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 
 ### Build System, Tooling, Infrastructure & UX
 
-- [ ] NEC Move to CMake for better dependency handling
 - [ ] NEC Better arena implementation with chaining
 - [x] NEC Only emit output file in current directory unless specified with `-c`, else use `/tmp`
 - [x] NEC Add `-O` cli option
@@ -22,7 +21,7 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 - [x] NEC Separate stack-based and heap-based allocations
 - [ ] NEX Add option to parse and use -o before/after -c for specifying where the object file should be stored
 
-- [ ] NEC make typedefs for ints: u32, u64, etc in utils and use uniformly across codebase
+- [x] NEC make typedefs for ints and floats: u32, u64, f32, etc in utils and use uniformly across codebase
 
 ### Error Handling & Debugging
 
@@ -53,6 +52,10 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 - [x] NEC Handle LLVM target selection in cstate
 - [x] NEC `-S` CLI flag and `--emit-llvm` flag, general CLI improvements
 - [x] NEC Move linking to llvm backend, since linking is only needed there (For now)
+
+- [ ] NEC Move to llvm submodule instead of system installation of llvm-21
+  - [ ] basic setup
+  - [ ] find and fix bugs (eg. `./examples/linear_search.scl`)
 
 ### Alternative Backends
 

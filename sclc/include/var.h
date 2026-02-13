@@ -5,8 +5,8 @@
 #ifndef VAR
 #define VAR
 
+#include "common.h"
 #include "ds/ht.h"
-#include <stddef.h>
 
 /*
  * @enum type: represents data types.
@@ -25,12 +25,12 @@ typedef enum type {
 typedef struct variable {
   type type;
   char *name;
-  size_t line;
-  size_t stack_offset;
+  u64 line;
+  u64 stack_offset;
 
   bool is_array;
-  size_t dimensions;
-  size_t *dimension_sizes;
+  u64 dimensions;
+  u64 *dimension_sizes;
 } variable;
 
 /*
@@ -40,7 +40,7 @@ typedef struct variable {
  *
  * @return: size in bytes of the type t.
  */
-int get_type_size(type t);
+u32 get_type_size(type t);
 
 /*
  * @brief: check if a certain variable exists in a dynamic_array of variables.
@@ -51,7 +51,7 @@ int get_type_size(type t);
  *
  * @return: int
  */
-size_t get_var_stack_offset(ht *variables, variable *var_to_find);
+u64 get_var_stack_offset(ht *variables, variable *var_to_find);
 
 /*
  * @brief: check for a variable's type by its name / identifier and line data.

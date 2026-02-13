@@ -5,7 +5,7 @@
 #ifndef UTILS
 #define UTILS
 
-#include <stddef.h>
+#include "common.h"
 
 /*
  * @brief: allocates memory with error checking.
@@ -14,7 +14,7 @@
  *
  * @return pointer to the beginning of the allocated memory.
  */
-void *scu_checked_malloc(size_t size);
+void *scu_checked_malloc(u64 size);
 
 /*
  * @brief: re-allocates memory with error checking
@@ -24,7 +24,7 @@ void *scu_checked_malloc(size_t size);
  *
  * @return pointer to the beginning of the allocated memory.
  */
-void *scu_checked_realloc(void *ptr, size_t size);
+void *scu_checked_realloc(void *ptr, u64 size);
 
 /*
  * @brief: return filename without the extension.
@@ -44,7 +44,7 @@ char *scu_extract_name(const char *filename);
  *
  * @return number of bytes read
  */
-int scu_read_file(const char *path, char **buffer);
+u32 scu_read_file(const char *path, char **buffer);
 
 /*
  * @brief: formats a string with variable arguments.

@@ -1,5 +1,6 @@
 #include "cstate.h"
 #include "backend/backend.h"
+#include "common.h"
 #include "ds/arena.h"
 #include "ds/dynamic_array.h"
 #include "fstate.h"
@@ -14,7 +15,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
-void cstate_init(cstate *cst, int argc, char *argv[]) {
+void cstate_init(cstate *cst, u32 argc, char *argv[]) {
   if (argc <= 1) {
     /*
      * Default output.
@@ -60,7 +61,7 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
     exit(1);
   }
 
-  int i = 1;
+  u32 i = 1;
 
   dynamic_array filenames;
   dynamic_array_init(&filenames, sizeof(char *));
@@ -259,7 +260,7 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
   arena_init(&cst->file_arena, 1 << 9);
   dynamic_array_init(&cst->files, sizeof(fstate *));
 
-  for (size_t i = 0; i < filenames.count; i++) {
+  for (u64 i = 0; i < filenames.count; i++) {
     char *filepath;
     dynamic_array_get(&filenames, i, &filepath);
 
@@ -267,7 +268,7 @@ void cstate_init(cstate *cst, int argc, char *argv[]) {
     fstate_init(fst, filepath);
     dynamic_array_append(&cst->files, &fst);
 
-    size_t len;
+    u64 len;
     char *obj;
 
     if (cst->options.compile_only) {
@@ -301,7 +302,7 @@ void cstate_free(cstate *cst) {
   if (cst->llvm_target_triple != NULL)
     free(cst->llvm_target_triple);
 
-  for (size_t i = 0; i < cst->files.count; i++) {
+  for (u64 i = 0; i < cst->files.count; i++) {
     fstate *fst;
     dynamic_array_get(&cst->files, i, &fst);
     fstate_free(fst);

@@ -6,11 +6,10 @@
 #define FSTATE_H
 
 #include "ast.h"
+#include "common.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
 #include "ds/stack.h"
-
-#include <stddef.h>
 
 typedef struct fstate {
   /*
@@ -18,7 +17,7 @@ typedef struct fstate {
    * Ex: main.scl, lib/io.scl
    */
   char *filepath;
-  size_t filepath_len;
+  u64 filepath_len;
 
   /*
    * File path without the extention.
@@ -30,7 +29,7 @@ typedef struct fstate {
    * Source buffer and its size in bytes.
    */
   char *code_buffer;
-  size_t code_buffer_len;
+  u64 code_buffer_len;
 
   /*
    * Variables / artifacts for the whole compiler pipeline.

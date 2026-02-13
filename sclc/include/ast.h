@@ -57,7 +57,7 @@ typedef struct fn_call_node {
  */
 typedef struct term_node {
   term_kind kind;
-  size_t line;
+  u64 line;
   union {
     token_literal_value value;
     variable identifier;
@@ -92,7 +92,7 @@ typedef enum expr_kind {
  */
 typedef struct expr_node {
   expr_kind kind;
-  size_t line;
+  u64 line;
   union {
     term_node term;
     struct {
@@ -120,7 +120,7 @@ typedef enum rel_kind {
  */
 typedef struct rel_node {
   rel_kind kind;
-  size_t line;
+  u64 line;
   term_binary_node comparison;
 } rel_node;
 
@@ -258,7 +258,7 @@ typedef struct loop_node {
 
   union {
     struct {
-      uint8_t placeholder_buffer;
+      u8 placeholder_buffer;
     } unconditional;
 
     struct {
@@ -294,7 +294,7 @@ typedef struct fn_node {
 
     struct {
       // JUST A PLACEHOLDER, MIGHT APPEAR IN WARNINGS
-      uint8_t *placeholder_buffer;
+      u8 *placeholder_buffer;
     } declared;
   };
 } fn_node;
@@ -308,7 +308,7 @@ typedef struct return_node {
  */
 typedef struct instr_node {
   instr_kind kind;
-  size_t line;
+  u64 line;
   union {
     variable declare_variable;
     initialize_variable_node initialize_variable;

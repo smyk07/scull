@@ -3,10 +3,11 @@
  * checking and type checking.
  */
 
-#ifndef SEMANTIC
-#define SEMANTIC
+#ifndef SEMANTIC_H
+#define SEMANTIC_H
 
 #include "ast.h"
+#include "common.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
 
@@ -19,7 +20,7 @@
  *
  * @return: the integer value of the constant expression
  */
-int evaluate_const_expr(expr_node *expr);
+u32 evaluate_const_expr(expr_node *expr);
 
 /*
  * @brief: go through all the variables and labels in the parse tree and check
@@ -31,4 +32,4 @@ int evaluate_const_expr(expr_node *expr);
  */
 void check_semantics(dynamic_array *instrs, ht *variables, ht *functions);
 
-#endif // !SEMANTIC
+#endif // !SEMANTIC_H

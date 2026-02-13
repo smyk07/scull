@@ -1,23 +1,23 @@
 #ifndef STACK
 #define STACK
 
-#include <stddef.h>
+#include "common.h"
 
 typedef struct stack {
   void *items;
-  size_t item_size;
-  size_t count;
-  size_t capacity;
+  u64 item_size;
+  u64 count;
+  u64 capacity;
 } stack;
 
 #define STACK_INITIAL_CAPACITY 4
 #define STACK_RESIZE_FACTOR 2
 
-int stack_init(stack *s, size_t item_size);
+u32 stack_init(stack *s, u64 item_size);
 
-int stack_push(stack *s, void *item);
+u32 stack_push(stack *s, void *item);
 
-int stack_pop(stack *s, void *item);
+u32 stack_pop(stack *s, void *item);
 
 void *stack_top(stack *s);
 

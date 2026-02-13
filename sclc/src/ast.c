@@ -1,10 +1,10 @@
 #include "ast.h"
+#include "common.h"
 #include "ds/arena.h"
 #include "ds/dynamic_array.h"
 #include "ds/ht.h"
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 void ast_init(ast *a) {
@@ -54,7 +54,7 @@ static void check_term_and_print(term_node *term) {
     break;
   case TERM_STRING:
     char *str = term->value.str;
-    size_t len = strlen(str);
+    u64 len = strlen(str);
     if (len >= 1 && str[len - 1] == '\n')
       printf("\"%.*s\"", (int)(len - 1), str);
     else
@@ -80,7 +80,7 @@ static void check_term_and_print(term_node *term) {
     break;
   case TERM_FUNCTION_CALL:
     printf("%s(", term->fn_call.name);
-    for (size_t i = 0; i < term->fn_call.parameters.count; i++) {
+    for (u64 i = 0; i < term->fn_call.parameters.count; i++) {
       expr_node arg;
       dynamic_array_get(&term->fn_call.parameters, i, &arg);
       check_expr_and_print(&arg);
@@ -181,10 +181,10 @@ static void check_rel_node_and_print(rel_node *rel) {
 /*
  * Counts the indentation for ast printing
  */
-static uint32_t icount = 0;
+static u32 icount = 0;
 
 #define PRINT_INDENTATION                                                      \
-  for (uint32_t i = 0; i < icount; i++)                                        \
+  for (u32 i = 0; i < icount; i++)                                             \
     fputc('\t', stdout);
 
 static void print_cond_block(cond_block_node *block) {
@@ -196,7 +196,7 @@ static void print_cond_block(cond_block_node *block) {
   if (block->kind == COND_SINGLE_INSTR) {
     print_instr(block->single);
   } else {
-    for (unsigned int i = 0; i < block->multi.count; i++) {
+    for (u64 i = 0; i < block->multi.count; i++) {
       instr_node instr;
       dynamic_array_get(&block->multi, i, &instr);
       print_instr(&instr);
@@ -280,8 +280,7 @@ void print_instr(instr_node *instr) {
     printf("[");
     check_expr_and_print(instr->initialize_array.size_expr);
     printf("] = {");
-    for (size_t i = 0; i < instr->initialize_array.literal.elements.count;
-         i++) {
+    for (u64 i = 0; i < instr->initialize_array.literal.elements.count; i++) {
       expr_node elem;
       dynamic_array_get(&instr->initialize_array.literal.elements, i, &elem);
       check_expr_and_print(&elem);
@@ -316,7 +315,7 @@ void print_instr(instr_node *instr) {
 
     icount++;
 
-    for (size_t i = 0; i < match->cases.count; i++) {
+    for (u64 i = 0; i < match->cases.count; i++) {
       match_case_node case_node;
       dynamic_array_get(&match->cases, i, &case_node);
 
@@ -326,7 +325,7 @@ void print_instr(instr_node *instr) {
 
       switch (case_node.kind) {
       case MATCH_CASE_VALUES: {
-        for (size_t j = 0; j < case_node.values.values.count; j++) {
+        for (u64 j = 0; j < case_node.values.values.count; j++) {
           expr_node *val;
           dynamic_array_get(&case_node.values.values, j, &val);
           check_expr_and_print(val);
@@ -398,7 +397,7 @@ void print_instr(instr_node *instr) {
 
     icount++;
 
-    for (unsigned int i = 0; i < instr->loop.instrs.count; i++) {
+    for (u64 i = 0; i < instr->loop.instrs.count; i++) {
       instr_node _instr;
       dynamic_array_get(&instr->loop.instrs, i, &_instr);
       print_instr(&_instr);
@@ -421,7 +420,7 @@ void print_instr(instr_node *instr) {
                                                       : "definition",
            instr->fn_declare_node.name);
 
-    for (size_t i = 0; i < instr->fn_declare_node.parameters.count; i++) {
+    for (u64 i = 0; i < instr->fn_declare_node.parameters.count; i++) {
       variable param;
       dynamic_array_get(&instr->fn_declare_node.parameters, i, &param);
       check_var_and_print(&param);
@@ -436,7 +435,7 @@ void print_instr(instr_node *instr) {
 
     if (instr->fn_declare_node.returntypes.count > 0) {
       printf(" : ");
-      for (size_t i = 0; i < instr->fn_declare_node.returntypes.count; i++) {
+      for (u64 i = 0; i < instr->fn_declare_node.returntypes.count; i++) {
         type ret_type;
         dynamic_array_get(&instr->fn_declare_node.returntypes, i, &ret_type);
         switch (ret_type) {
@@ -461,7 +460,7 @@ void print_instr(instr_node *instr) {
     printf("\n");
 
     if (instr->fn_declare_node.kind == FN_DEFINED) {
-      for (size_t i = 0; i < instr->fn_declare_node.defined.instrs.count; i++) {
+      for (u64 i = 0; i < instr->fn_declare_node.defined.instrs.count; i++) {
         instr_node body_instr;
         dynamic_array_get(&instr->fn_declare_node.defined.instrs, i,
                           &body_instr);
@@ -472,7 +471,7 @@ void print_instr(instr_node *instr) {
 
   case INSTR_FN_DEFINE:
     printf("function definition: %s(", instr->fn_define_node.name);
-    for (size_t i = 0; i < instr->fn_define_node.parameters.count; i++) {
+    for (u64 i = 0; i < instr->fn_define_node.parameters.count; i++) {
       variable param;
       dynamic_array_get(&instr->fn_define_node.parameters, i, &param);
       check_var_and_print(&param);
@@ -487,7 +486,7 @@ void print_instr(instr_node *instr) {
 
     if (instr->fn_define_node.returntypes.count > 0) {
       printf(" : ");
-      for (size_t i = 0; i < instr->fn_define_node.returntypes.count; i++) {
+      for (u64 i = 0; i < instr->fn_define_node.returntypes.count; i++) {
         type ret_type;
         dynamic_array_get(&instr->fn_define_node.returntypes, i, &ret_type);
         switch (ret_type) {
@@ -513,7 +512,7 @@ void print_instr(instr_node *instr) {
 
     icount++;
 
-    for (size_t i = 0; i < instr->fn_define_node.defined.instrs.count; i++) {
+    for (u64 i = 0; i < instr->fn_define_node.defined.instrs.count; i++) {
       instr_node body_instr;
       dynamic_array_get(&instr->fn_define_node.defined.instrs, i, &body_instr);
       print_instr(&body_instr);
@@ -527,7 +526,7 @@ void print_instr(instr_node *instr) {
     if (instr->ret_node.returnvals.count == 0) {
       printf("void\n");
     } else {
-      for (size_t i = 0; i < instr->ret_node.returnvals.count; i++) {
+      for (u64 i = 0; i < instr->ret_node.returnvals.count; i++) {
         expr_node ret_expr;
         dynamic_array_get(&instr->ret_node.returnvals, i, &ret_expr);
         check_expr_and_print(&ret_expr);
@@ -541,7 +540,7 @@ void print_instr(instr_node *instr) {
 
   case INSTR_FN_CALL:
     printf("function call: %s(", instr->fn_call.name);
-    for (size_t i = 0; i < instr->fn_call.parameters.count; i++) {
+    for (u64 i = 0; i < instr->fn_call.parameters.count; i++) {
       expr_node arg;
       dynamic_array_get(&instr->fn_call.parameters, i, &arg);
       check_expr_and_print(&arg);
@@ -555,7 +554,7 @@ void print_instr(instr_node *instr) {
 }
 
 void print_ast(ast *program_ast) {
-  for (unsigned int i = 0; i < program_ast->instrs.count; i++) {
+  for (u64 i = 0; i < program_ast->instrs.count; i++) {
     instr_node instr;
     dynamic_array_get(&program_ast->instrs, i, &instr);
     print_instr(&instr);
@@ -605,7 +604,7 @@ static void free_expr_node(expr_node *expr) {
 }
 
 static void free_exprs(dynamic_array *exprs) {
-  for (unsigned int i = 0; i < exprs->count; i++) {
+  for (u64 i = 0; i < exprs->count; i++) {
     expr_node expr;
     dynamic_array_get(exprs, i, &expr);
     free_expr_node(&expr);
@@ -665,13 +664,13 @@ static void free_instr(instr_node *instr) {
   case INSTR_MATCH:
     free_expr_node(instr->match.expr);
 
-    for (size_t i = 0; i < instr->match.cases.count; i++) {
+    for (u64 i = 0; i < instr->match.cases.count; i++) {
       match_case_node case_node;
       dynamic_array_get(&instr->match.cases, i, &case_node);
 
       switch (case_node.kind) {
       case MATCH_CASE_VALUES:
-        for (size_t j = 0; j < case_node.values.values.count; j++) {
+        for (u64 j = 0; j < case_node.values.values.count; j++) {
           expr_node *expr;
           dynamic_array_get(&case_node.values.values, j, &expr);
           free_expr_node(expr);
@@ -738,7 +737,7 @@ static void free_instr(instr_node *instr) {
 }
 
 static void free_instrs(dynamic_array *instrs) {
-  for (unsigned int i = 0; i < instrs->count; i++) {
+  for (u64 i = 0; i < instrs->count; i++) {
     instr_node instr;
     dynamic_array_get(instrs, i, &instr);
     free_instr(&instr);

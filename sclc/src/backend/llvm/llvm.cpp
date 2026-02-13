@@ -7,6 +7,7 @@
 extern "C" {
 #include "ast.h"
 #include "backend/llvm/llvm.h"
+#include "common.h"
 #include "cstate.h"
 #include "ds/dynamic_array.h"
 #include "fstate.h"
@@ -27,8 +28,6 @@ extern "C" {
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/TargetParser/Host.h>
 #include <llvm/TargetParser/Triple.h>
-
-#include <cstddef>
 
 typedef struct llvm_backend_ctx llvm_backend_ctx;
 
@@ -77,7 +76,7 @@ void llvm_backend_init(cstate *cst, fstate *fst) {
 }
 
 void llvm_backend_compile(cstate *, fstate *fst) {
-  for (size_t i = 0; i < fst->program_ast.instrs.count; i++) {
+  for (u64 i = 0; i < fst->program_ast.instrs.count; i++) {
     instr_node instr;
     dynamic_array_get(&fst->program_ast.instrs, i, &instr);
 
@@ -244,7 +243,7 @@ void llvm_backend_cleanup(cstate *, fstate *) {
 void llvm_backend_link(cstate *cst) {
   std::vector<const char *> obj_files;
 
-  for (size_t i = 0; i < cst->obj_file_list.count; i++) {
+  for (u64 i = 0; i < cst->obj_file_list.count; i++) {
     char *obj;
     dynamic_array_get(&cst->obj_file_list, i, &obj);
     obj_files.push_back(obj);
