@@ -10,7 +10,7 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 
 ---
 
-## Phase 1: Core Compiler Infrastructure
+## Phase 1: Frontend and Core Compiler Infrastructure
 
 ### Build System, Tooling, Infrastructure & UX
 
@@ -29,8 +29,10 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
   - [ ] Fix existing bugs
   - [ ] Errors with source preview
 - [x] NEC Tab counting in AST printer
-- [x] NEC Better error handling (basic)
 - [x] NEC Parser bug fixes and proper memory management
+- [ ] NEC Parser refactor
+  - reduce pre-defined parsables into instructions, rather than the existing
+  - will follow a similar top-down approach but would be better to add features to and read
 
 ### Testing
 
@@ -64,6 +66,7 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 - [ ] NEC Develop C Backend
   - Language changes for 1:1 C translation needed
   - Basic types, structs, unions, enums, memory management, etc.
+
 - [ ] EXP Optional cosmopolitan backend for generating fat binaries
 
 ### Distribution
@@ -78,6 +81,10 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 ---
 
 ## Phase 3: Core Language Features
+
+### Syntax
+
+- [ ] NEC Write a EBNF Grammar specification for scull
 
 ### Type System
 
@@ -95,12 +102,16 @@ Please Follow [this](https://www.conventionalcommits.org/en/v1.0.0/) as a commit
 - [x] NEC Else statement
 - [x] NEC Else if statement
 - [x] NEC Switch/match statement
+
 - [ ] NEC For loop
   - [x] Basic implementation
   - [ ] Typing for iterator
   - [ ] looping through arrays
-- [ ] NEC Ternary operator-like functionality using if-elseif-else in assignment
 - [ ] EXP For-each loop
+
+- [ ] NEC Ternary operator-like functionality using if-elseif-else in assignment
+
+- [ ] NEX Seperate scopes for multi-instr conditional blocks (if-else, match, ...)
 
 ### Operators
 
