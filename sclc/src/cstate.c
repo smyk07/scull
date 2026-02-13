@@ -77,10 +77,6 @@ void cstate_init(cstate *cst, u32 argc, char *argv[]) {
 
     if (strcmp(arg, "--target") == 0) {
       LLVMInitializeX86TargetInfo();
-      LLVMInitializeX86Target();
-      LLVMInitializeX86TargetMC();
-      LLVMInitializeX86AsmParser();
-      LLVMInitializeX86AsmPrinter();
 
       if (i + 1 >= argc) {
         scu_perror("Missing target after %s\n", arg);
@@ -98,13 +94,16 @@ void cstate_init(cstate *cst, u32 argc, char *argv[]) {
 
         if (err)
           LLVMDisposeMessage(err);
-        LLVMDisposeMessage(target_str);
         free(cst);
         exit(1);
       }
 
       cst->options.target_specified = true;
-      cst->llvm_target_triple = target_str;
+
+      if (cst->llvm_target_triple)
+        free(cst->llvm_target_triple);
+
+      cst->llvm_target_triple = strdup(target_str);
 
       i += 2;
       continue;
@@ -307,6 +306,12 @@ void cstate_free(cstate *cst) {
     dynamic_array_get(&cst->files, i, &fst);
     fstate_free(fst);
     arena_free(&cst->file_arena);
+  }
+
+  for (u64 i = 0; i < cst->obj_file_list.count; i++) {
+    char *objfname;
+    dynamic_array_get(&cst->obj_file_list, i, &objfname);
+    free(objfname);
   }
 
   dynamic_array_free(&cst->obj_file_list);
